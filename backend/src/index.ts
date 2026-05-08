@@ -23,6 +23,7 @@ app.use(cookieParser());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/assessments', assessmentRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Vertical API is running');
