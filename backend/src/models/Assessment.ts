@@ -8,7 +8,8 @@ export interface IAssessment extends Document {
     question: string;
     options: string[];
     correctAnswer: number;
-    skillTags: string[]; // Added this
+    explanation: string;
+    skillTags: string[];
   }[];
 }
 
@@ -20,7 +21,8 @@ const AssessmentSchema: Schema = new Schema({
     question: String,
     options: [String],
     correctAnswer: Number,
-    skillTags: [String] // Added this
+    explanation: String,
+    skillTags: [String]
   }]
 });
 

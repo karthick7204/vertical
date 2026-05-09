@@ -34,8 +34,8 @@ export const getAssessmentsByCourse = async (req: Request, res: Response) => {
   const courseId = req.params.courseId as string;
 
   try {
-    const assessments = await Assessment.find({ courseId });
-    res.json(assessments);
+    const assessment = await Assessment.findOne({ courseId });
+    res.json(assessment);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

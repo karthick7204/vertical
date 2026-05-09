@@ -22,6 +22,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       req.user = await User.findById(decoded.userId).select('-password');
       next();
     } catch (error) {
+      console.error('JWT Verification Error:', error);
       res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
@@ -38,4 +39,12 @@ export const authorize = (...roles: string[]) => {
     }
     next();
   };
+};
+
+export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user && (req.user.role === 'HR_ADMIN' || req.user.role === 'SUPER_ADMIN')) {
+    next();
+  } else {
+    res.status(401).json({ message: 'Not authorized as an admin' });
+  }
 };

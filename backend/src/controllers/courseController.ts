@@ -1,13 +1,15 @@
 import { type Request, type Response } from 'express';
 import Course from '../models/Course.js';
 import Module from '../models/Module.js';
+import Assessment from '../models/Assessment.js';
+import { generateAIAssessment } from '../utils/aiGenerator.js';
 import { type AuthRequest } from '../middleware/authMiddleware.js';
 
 // @desc    Create a new course
 // @route   POST /api/courses
 // @access  Private (HR_ADMIN, SUPER_ADMIN)
 export const createCourse = async (req: AuthRequest, res: Response) => {
-  const { title, description, thumbnail, category, isPublic } = req.body;
+  const { title, description, thumbnail, category, isPublic, modules } = req.body;
 
   try {
     const course = await Course.create({
@@ -16,7 +18,30 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       thumbnail,
       category,
       isPublic,
-      organizationId: req.user?.organizationId, // Linked to HR's organization
+      organizationId: req.user?.organizationId,
+    });
+
+    if (modules && Array.isArray(modules) && modules.length > 0) {
+      const moduleData = modules.map((mod: any, index: number) => ({
+        ...mod,
+        courseId: course._id,
+        order: mod.order || index,
+      }));
+      await Module.insertMany(moduleData);
+    }
+
+    // Trigger AI Assessment Generation (15 Questions)
+    const aiQuestions = await generateAIAssessment({
+      title,
+      description,
+      modules: modules || []
+    });
+
+    await Assessment.create({
+      courseId: course._id,
+      title: `${title} - AI Evaluation`,
+      type: 'MODULE_QUIZ',
+      questions: aiQuestions
     });
 
     res.status(201).json(course);
@@ -39,7 +64,7 @@ export const getCourses = async (req: AuthRequest, res: Response) => {
       query = { $or: [{ isPublic: true }, { organizationId: req.user.organizationId }] };
     }
 
-    const courses = await Course.find(query);
+    const courses = await Course.find(query).populate('organizationId', 'name');
     res.json(courses);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

@@ -3,7 +3,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 
 export const generateAccessToken = (userId: string) => {
   return jwt.sign({ userId }, process.env.JWT_ACCESS_SECRET!, {
-    expiresIn: '15m',
+    expiresIn: '1h',
   });
 };
 

@@ -8,8 +8,8 @@ export interface IUser extends Document {
   role: 'SUPER_ADMIN' | 'HR_ADMIN' | 'LEARNER';
   organizationId?: mongoose.Types.ObjectId;
   isActivated: boolean;
-  activationToken?: string;
-  refreshToken?: string;
+  activationToken?: string | undefined;
+  refreshToken?: string | undefined;
   profileImage?: string;
   department?: string;
   createdAt: Date;

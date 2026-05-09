@@ -2,13 +2,14 @@ import { type Request, type Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Organization from '../models/Organization.js';
 import { generateAccessToken, generateRefreshToken, sendRefreshToken } from '../utils/generateToken.js';
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req: Request, res: Response) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, organizationName } = req.body;
 
   try {
     const userExists = await User.findOne({ email });
@@ -17,14 +18,27 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Start a basic "transaction" feel
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'LEARNER',
+      role: role || 'HR_ADMIN',
+      isActivated: true // Self-registered admins are active
     });
 
     if (user) {
+      // Create organization if name provided
+      if (organizationName) {
+        const organization = await Organization.create({
+          name: organizationName,
+          adminId: user._id,
+        });
+        
+        user.organizationId = organization._id as any;
+        await user.save();
+      }
+
       const accessToken = generateAccessToken(user._id.toString());
       const refreshToken = generateRefreshToken(user._id.toString());
       
@@ -38,6 +52,7 @@ export const registerUser = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        organizationId: user.organizationId,
         accessToken,
       });
     } else {
@@ -71,6 +86,7 @@ export const loginUser = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        organizationId: user.organizationId,
         accessToken,
       });
     } else {
@@ -124,10 +140,92 @@ export const logoutUser = async (req: Request, res: Response) => {
 
   const user = await User.findOne({ refreshToken: token });
   if (user) {
-    user.refreshToken = '';
+    user.refreshToken = undefined;
     await user.save();
   }
 
   res.clearCookie('refreshToken', { path: '/api/auth/refresh_token' });
   return res.status(200).json({ message: 'Logged out' });
+};
+
+import crypto from 'crypto';
+import sendEmail from '../utils/sendEmail.js';
+
+// @desc    Invite a new user (Direct Creation)
+// @route   POST /api/auth/invite
+// @access  Private/Admin
+export const inviteUser = async (req: Request, res: Response) => {
+  const { name, email, role, organizationId, password } = req.body;
+
+  try {
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required for direct provisioning' });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: role || 'LEARNER',
+      organizationId,
+      isActivated: true,
+    });
+
+    res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Initialize/Activate invited user
+// @route   POST /api/auth/activate
+// @access  Public
+export const activateUser = async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+
+  try {
+    const user = await User.findOne({ activationToken: token });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    user.password = password;
+    user.isActivated = true;
+    user.activationToken = undefined;
+    
+    const accessToken = generateAccessToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
+    
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    sendRefreshToken(res, refreshToken);
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      accessToken,
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 };
