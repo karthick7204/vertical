@@ -4,13 +4,15 @@ import {
   getAssessmentsByCourse, 
   getAssessmentById, 
   updateAssessment, 
-  deleteAssessment 
+  deleteAssessment,
+  submitScore
 } from '../controllers/assessmentController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.post('/', protect, authorize('HR_ADMIN', 'SUPER_ADMIN'), createAssessment);
+router.post('/score', protect, submitScore);
 
 router.get('/course/:courseId', protect, getAssessmentsByCourse);
 

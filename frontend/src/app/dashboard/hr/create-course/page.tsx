@@ -29,11 +29,19 @@ import { useAuth } from '@/context/AuthContext';
 
 type ResourceType = 'video' | 'pdf' | 'document' | 'text';
 
+interface SubModule {
+  id: string;
+  title: string;
+  content: string;
+}
+
 interface Module {
   id: string;
   title: string;
   type: ResourceType;
   content: string;
+  skillsCovered: string;
+  subModules: SubModule[];
   isExpanded: boolean;
 }
 
@@ -44,7 +52,7 @@ export default function CreateCoursePage() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Engineering');
   const [modules, setModules] = useState<Module[]>([
-    { id: '1', title: 'Introduction to Core Concepts', type: 'video', content: '', isExpanded: true }
+    { id: '1', title: 'Introduction to Core Concepts', type: 'video', content: '', skillsCovered: 'Basics, Architecture', subModules: [], isExpanded: true }
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -55,6 +63,8 @@ export default function CreateCoursePage() {
       title: 'New Module Architecture',
       type: 'text',
       content: '',
+      skillsCovered: '',
+      subModules: [],
       isExpanded: true
     };
     setModules([...modules, newModule]);
@@ -74,6 +84,45 @@ export default function CreateCoursePage() {
     setModules(modules.map(m => m.id === id ? { ...m, isExpanded: !m.isExpanded } : m));
   };
 
+  const addSubModule = (moduleId: string) => {
+    setModules(modules.map(m => {
+      if (m.id === moduleId) {
+        return {
+          ...m,
+          subModules: [
+            ...m.subModules,
+            { id: Date.now().toString(), title: 'New Sub-Module', content: '' }
+          ]
+        };
+      }
+      return m;
+    }));
+  };
+
+  const removeSubModule = (moduleId: string, subModuleId: string) => {
+    setModules(modules.map(m => {
+      if (m.id === moduleId) {
+        return {
+          ...m,
+          subModules: m.subModules.filter(sm => sm.id !== subModuleId)
+        };
+      }
+      return m;
+    }));
+  };
+
+  const updateSubModule = (moduleId: string, subModuleId: string, updates: Partial<SubModule>) => {
+    setModules(modules.map(m => {
+      if (m.id === moduleId) {
+        return {
+          ...m,
+          subModules: m.subModules.map(sm => sm.id === subModuleId ? { ...sm, ...updates } : sm)
+        };
+      }
+      return m;
+    }));
+  };
+
   const handleSave = async () => {
     if (!courseTitle) return;
     
@@ -89,7 +138,12 @@ export default function CreateCoursePage() {
           title: m.title,
           content: m.content,
           type: m.type,
-          order: index
+          order: index,
+          skillsCovered: m.skillsCovered.split(',').map(s => s.trim()).filter(s => s !== ''),
+          subModules: m.subModules.map(sm => ({
+            title: sm.title,
+            content: sm.content
+          }))
         }))
       };
 
@@ -323,6 +377,66 @@ export default function CreateCoursePage() {
                                 value={mod.content}
                                 onChange={(e) => updateModule(mod.id, { content: e.target.value })}
                               />
+                            </div>
+
+                            <div className="space-y-4">
+                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Skills Covered (Comma Separated)</label>
+                              <input 
+                                type="text"
+                                className="w-full p-4 border-2 border-black bg-zinc-50 font-bold text-xs focus:bg-white focus:outline-none transition-all"
+                                placeholder="e.g. React, TypeScript, State Management"
+                                value={mod.skillsCovered}
+                                onChange={(e) => updateModule(mod.id, { skillsCovered: e.target.value })}
+                              />
+                            </div>
+
+                            {/* Sub-Modules Section */}
+                            <div className="pt-6 border-t-2 border-black/5 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2">
+                                  Sub-Modules <span className="opacity-30">// Optional</span>
+                                </h4>
+                                <button 
+                                  onClick={() => addSubModule(mod.id)}
+                                  className="text-[8px] font-black uppercase border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-all flex items-center gap-1"
+                                >
+                                  <Plus className="w-3 h-3" /> Add Sub-Module
+                                </button>
+                              </div>
+
+                              <div className="space-y-4">
+                                {mod.subModules.map((sm, smIndex) => (
+                                  <div key={sm.id} className="bg-zinc-50 border-2 border-black p-4 space-y-4 relative group">
+                                    <button 
+                                      onClick={() => removeSubModule(mod.id, sm.id)}
+                                      className="absolute top-2 right-2 text-zinc-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                    
+                                    <div className="flex gap-4">
+                                      <div className="flex-1">
+                                        <label className="block text-[8px] font-black uppercase text-zinc-400 mb-1">Sub-Module Title</label>
+                                        <input 
+                                          type="text"
+                                          className="w-full p-2 border border-black/10 bg-white font-bold text-xs uppercase"
+                                          value={sm.title}
+                                          onChange={(e) => updateSubModule(mod.id, sm.id, { title: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="block text-[8px] font-black uppercase text-zinc-400 mb-1">Sub-Module Content</label>
+                                      <textarea 
+                                        className="w-full p-2 border border-black/10 bg-white font-bold text-xs h-20"
+                                        placeholder="Specific details for this sub-module..."
+                                        value={sm.content}
+                                        onChange={(e) => updateSubModule(mod.id, sm.id, { content: e.target.value })}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </motion.div>
                         )}

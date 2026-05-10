@@ -20,7 +20,7 @@ export const assessmentService = {
     return apiClient.get(`/assessments/course/${courseId}`);
   },
 
-  submitScore: async (courseId: string, score: number, totalQuestions: number) => {
-    return apiClient.post('/assessments/score', { courseId, score, totalQuestions });
+  submitScore: async (courseId: string, score: number, totalQuestions: number, correctQuestionIndices: number[]) => {
+    return apiClient.post('/assessments/score', { courseId, score, totalQuestions, correctQuestionIndices });
   }
 };

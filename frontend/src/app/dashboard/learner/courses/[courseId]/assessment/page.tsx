@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { 
   ArrowLeft, 
+  ArrowRight,
   CheckCircle2, 
   XCircle, 
   ChevronRight,
@@ -27,6 +28,7 @@ export default function AssessmentPage() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
+  const [correctQuestionIndices, setCorrectQuestionIndices] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
 
@@ -55,6 +57,7 @@ export default function AssessmentPage() {
     setIsAnswered(true);
     if (selectedOption === assessment?.questions[currentQuestionIndex].correctAnswer) {
       setScore(prev => prev + 1);
+      setCorrectQuestionIndices(prev => [...prev, currentQuestionIndex]);
     }
   };
 
@@ -69,7 +72,7 @@ export default function AssessmentPage() {
       setIsFinished(true);
       // Submit score to backend
       try {
-        await assessmentService.submitScore(courseId, score, assessment.questions.length);
+        await assessmentService.submitScore(courseId, score, assessment.questions.length, correctQuestionIndices);
       } catch (error) {
         console.error('Failed to submit score:', error);
       }
@@ -112,38 +115,34 @@ export default function AssessmentPage() {
             animate={{ scale: 1, opacity: 1 }}
             className="max-w-2xl w-full bg-white border-4 border-black p-12 shadow-[16px_16px_0px_0px_#000000] text-center"
           >
-            <div className={`w-24 h-24 border-4 border-black rounded-full flex items-center justify-center mx-auto mb-8 ${isPassed ? 'bg-brand-primary' : 'bg-red-500'}`}>
-              <Award className="w-12 h-12 text-black" />
+            <div className={`w-24 h-24 border-4 border-black rounded-full flex items-center justify-center mx-auto mb-8 bg-brand-primary`}>
+              <Zap className="w-12 h-12 text-black fill-black" />
             </div>
             
-            <h1 className="text-4xl font-black uppercase tracking-tight italic mb-2">Evaluation Complete</h1>
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-10">Curriculum: {assessment.title}</p>
+            <h1 className="text-4xl font-black uppercase tracking-tight italic mb-2">Analysis Complete</h1>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-10">We have mapped your skill proficiency for: {assessment.title}</p>
             
-            <div className="grid grid-cols-2 gap-6 mb-12">
-              <div className="bg-zinc-50 border-4 border-black p-6">
-                <span className="block text-[10px] font-black uppercase tracking-widest mb-2">Final Score</span>
-                <span className="text-4xl font-black italic">{finalScorePercent}%</span>
-              </div>
-              <div className="bg-zinc-50 border-4 border-black p-6">
-                <span className="block text-[10px] font-black uppercase tracking-widest mb-2">Status</span>
-                <span className={`text-4xl font-black italic ${isPassed ? 'text-green-600' : 'text-red-600'}`}>
-                  {isPassed ? 'PASSED' : 'FAILED'}
-                </span>
-              </div>
+            <div className="bg-black text-brand-primary p-8 border-4 border-black mb-12 shadow-[8px_8px_0px_0px_#000000]">
+              <h3 className="text-xl font-black uppercase italic mb-4">Personalized Path Generated</h3>
+              <p className="text-xs font-bold uppercase tracking-widest opacity-80 leading-relaxed">
+                Based on your responses, our AI has architected a bespoke learning trajectory to optimize your growth.
+              </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4">
-              <Link href="/dashboard/learner" className="flex-1 bg-black text-white px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                Back to Roadmap
-              </Link>
-              {!isPassed && (
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="flex-1 bg-white border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest hover:bg-zinc-100 transition-all"
-                >
-                  Retry Assessment
-                </button>
-              )}
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => router.push('/dashboard/learner')}
+                className="w-full bg-brand-primary text-black border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
+              >
+                Launch Personalized Path
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="w-full bg-white border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest hover:bg-zinc-100 transition-all"
+              >
+                Re-take Assessment
+              </button>
             </div>
           </motion.div>
         </div>
@@ -207,8 +206,6 @@ export default function AssessmentPage() {
                   className={`
                     p-6 border-4 border-black text-left transition-all flex items-center justify-between
                     ${selectedOption === idx ? 'bg-black text-white scale-[1.02]' : 'bg-white hover:bg-zinc-50'}
-                    ${isAnswered && idx === currentQuestion.correctAnswer ? '!bg-green-500 !text-black shadow-[4px_4px_0px_0px_#000000]' : ''}
-                    ${isAnswered && selectedOption === idx && idx !== currentQuestion.correctAnswer ? '!bg-red-500 !text-black' : ''}
                     ${!isAnswered && 'shadow-[4px_4px_0px_0px_#000000] hover:shadow-[8px_8px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 active:shadow-none'}
                   `}
                 >
@@ -216,29 +213,9 @@ export default function AssessmentPage() {
                     <span className="text-xl font-black italic opacity-30">0{idx + 1}</span>
                     <span className="font-bold">{option}</span>
                   </div>
-                  {isAnswered && idx === currentQuestion.correctAnswer && <CheckCircle2 className="w-6 h-6" />}
-                  {isAnswered && selectedOption === idx && idx !== currentQuestion.correctAnswer && <XCircle className="w-6 h-6" />}
                 </button>
               ))}
             </div>
-
-            <AnimatePresence>
-              {isAnswered && (
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="bg-brand-primary/10 border-4 border-black p-8 mb-10"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <Info className="w-5 h-5" />
-                    <h4 className="font-black uppercase text-sm tracking-widest italic">AI Rationale</h4>
-                  </div>
-                  <p className="text-sm font-bold text-zinc-800 leading-relaxed italic">
-                    {currentQuestion.explanation}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <div className="flex justify-end sticky bottom-10">
               {!isAnswered ? (
@@ -247,7 +224,7 @@ export default function AssessmentPage() {
                   disabled={selectedOption === null}
                   className="bg-black text-white px-12 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50 disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none flex items-center gap-3"
                 >
-                  Confirm Choice
+                  Lock Response
                   <Zap className="w-4 h-4 fill-brand-primary" />
                 </button>
               ) : (
@@ -255,7 +232,7 @@ export default function AssessmentPage() {
                   onClick={handleNextQuestion}
                   className="bg-brand-primary border-4 border-black px-12 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center gap-3"
                 >
-                  {currentQuestionIndex === assessment.questions.length - 1 ? 'Finalize Evaluation' : 'Next Question'}
+                  {currentQuestionIndex === assessment.questions.length - 1 ? 'Generate Path' : 'Next Question'}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               )}

@@ -11,6 +11,8 @@ export interface Enrollment {
   };
   status: 'enrolled' | 'in-progress' | 'completed';
   progress: number;
+  score?: number;
+  totalQuestions?: number;
   enrolledAt: string;
 }
 

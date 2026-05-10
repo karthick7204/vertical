@@ -5,6 +5,8 @@ export interface IEnrollment extends Document {
   courseId: mongoose.Types.ObjectId;
   status: 'enrolled' | 'in-progress' | 'completed';
   progress: number;
+  score?: number;
+  totalQuestions?: number;
   enrolledAt: Date;
   completedAt?: Date;
 }
@@ -14,6 +16,8 @@ const EnrollmentSchema: Schema = new Schema({
   courseId: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
   status: { type: String, enum: ['enrolled', 'in-progress', 'completed'], default: 'enrolled' },
   progress: { type: Number, default: 0 },
+  score: { type: Number },
+  totalQuestions: { type: Number },
   enrolledAt: { type: Date, default: Date.now },
   completedAt: { type: Date }
 });

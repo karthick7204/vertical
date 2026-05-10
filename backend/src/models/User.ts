@@ -12,6 +12,9 @@ export interface IUser extends Document {
   refreshToken?: string | undefined;
   profileImage?: string;
   department?: string;
+  skills: Map<string, number>;
+  personalizedPath: string[];
+  focusSuggestions?: string;
   createdAt: Date;
 }
 
@@ -30,6 +33,13 @@ const UserSchema: Schema = new Schema({
   refreshToken: String,
   profileImage: String,
   department: String,
+  skills: {
+    type: Map,
+    of: Number,
+    default: {}
+  },
+  personalizedPath: [String],
+  focusSuggestions: String,
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -1,5 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface ISubModule {
+  title: string;
+  content?: string;
+  videoUrl?: string;
+}
+
 export interface IModule extends Document {
   courseId: mongoose.Types.ObjectId;
   title: string;
@@ -8,6 +14,7 @@ export interface IModule extends Document {
   order: number;
   skillsCovered: string[];
   estimatedTime?: number;
+  subModules: ISubModule[];
 }
 
 const ModuleSchema: Schema = new Schema({
@@ -17,7 +24,12 @@ const ModuleSchema: Schema = new Schema({
   videoUrl: String,
   order: { type: Number, required: true },
   skillsCovered: [String],
-  estimatedTime: Number
+  estimatedTime: Number,
+  subModules: [{
+    title: { type: String, required: true },
+    content: String,
+    videoUrl: String
+  }]
 });
 
 export default mongoose.model<IModule>('Module', ModuleSchema);

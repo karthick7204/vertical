@@ -12,7 +12,8 @@ import {
   LayoutDashboard,
   LogOut,
   Zap,
-  Trash2
+  Trash2,
+  Info
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -162,6 +163,46 @@ export default function LearnerDashboard() {
                 Active Learning Roadmap
               </h2>
               
+              {/* AI Personalized Path */}
+              {user?.personalizedPath && user.personalizedPath.length > 0 && (
+                <div className="mb-12 bg-black border-4 border-black p-8 shadow-[8px_8px_0px_0px_#facc15] relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-brand-primary text-black px-4 py-1 text-[10px] font-black uppercase tracking-widest italic">
+                    AI ARCHITECTED PATH
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-brand-primary text-xl font-black uppercase italic mb-6 flex items-center gap-3">
+                      <Zap className="w-5 h-5 fill-brand-primary" />
+                      Optimized Trajectory
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                      {user.personalizedPath.map((moduleName, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="bg-white text-black w-8 h-8 flex items-center justify-center font-black italic border-2 border-brand-primary">
+                            {i + 1}
+                          </div>
+                          <span className="text-white text-xs font-bold uppercase tracking-widest">{moduleName}</span>
+                          {i < user.personalizedPath.length - 1 && (
+                            <ArrowRight className="w-4 h-4 text-brand-primary" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {user?.focusSuggestions && (
+                      <div className="mt-8 pt-8 border-t border-brand-primary/30">
+                        <h4 className="text-brand-primary text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                          <Info className="w-4 h-4" />
+                          AI Success Directives
+                        </h4>
+                        <p className="text-white/80 text-[10px] font-bold leading-relaxed uppercase tracking-widest italic">
+                          "{user.focusSuggestions}"
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {myEnrollments.length > 0 ? (
                   myEnrollments.map((enrollment) => (
@@ -200,7 +241,8 @@ export default function LearnerDashboard() {
                             />
                           </div>
                         </div>
-                        <div className="flex gap-3">
+                        
+                        <div className="flex gap-3 items-center">
                           <button 
                             onClick={() => handleCancelEnrollment(enrollment._id)}
                             className="bg-white border-2 border-black p-3 hover:bg-red-50 transition-all shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
@@ -208,12 +250,28 @@ export default function LearnerDashboard() {
                           >
                             <Trash2 className="w-4 h-4 text-red-600" />
                           </button>
-                          <Link 
-                            href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
-                            className="bg-black text-white px-6 py-3 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
-                          >
-                            Launch
-                          </Link>
+
+                          {enrollment.status === 'completed' ? (
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="flex items-center gap-2 bg-green-500 text-black px-3 py-1 text-[10px] font-black uppercase italic">
+                                <Award className="w-3 h-3" />
+                                PASSED: {Math.round((enrollment.score! / enrollment.totalQuestions!) * 100)}%
+                              </div>
+                              <Link 
+                                href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
+                                className="text-[10px] font-black uppercase underline hover:text-brand-primary"
+                              >
+                                Review Results
+                              </Link>
+                            </div>
+                          ) : (
+                            <Link 
+                              href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
+                              className="bg-black text-white px-6 py-3 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                            >
+                              Launch
+                            </Link>
+                          )}
                         </div>
                       </div>
                     </motion.div>

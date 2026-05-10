@@ -9,6 +9,7 @@ export interface ILearnerScore extends Document {
     weaknesses: string[];
     aiSummary?: string;
   };
+  skillScores: Map<string, number>;
   takenAt: Date;
 }
 
@@ -20,6 +21,11 @@ const LearnerScoreSchema: Schema = new Schema({
     strengths: [String],
     weaknesses: [String],
     aiSummary: String
+  },
+  skillScores: {
+    type: Map,
+    of: Number,
+    default: {}
   },
   takenAt: { type: Date, default: Date.now }
 });

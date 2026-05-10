@@ -30,7 +30,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       await Module.insertMany(moduleData);
     }
 
-    // Trigger AI Assessment Generation (15 Questions)
+    // Trigger AI Assessment Generation (3 Questions per Module)
     const aiQuestions = await generateAIAssessment({
       title,
       description,
@@ -76,7 +76,7 @@ export const getCourses = async (req: AuthRequest, res: Response) => {
 // @access  Private (HR_ADMIN, SUPER_ADMIN)
 export const addModule = async (req: Request, res: Response) => {
   const courseId = req.params.courseId as string;
-  const { title, content, videoUrl, order, skillsCovered, estimatedTime } = req.body;
+  const { title, content, videoUrl, order, skillsCovered, estimatedTime, subModules } = req.body;
 
   try {
     const course = await Course.findById(courseId);
@@ -90,6 +90,7 @@ export const addModule = async (req: Request, res: Response) => {
       order,
       skillsCovered,
       estimatedTime,
+      subModules
     });
 
     res.status(201).json(module);

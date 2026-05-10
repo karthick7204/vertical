@@ -29,6 +29,12 @@ class ApiClient {
     }
 
     if (!response.ok) {
+      if (response.status === 401 && typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
+        localStorage.removeItem('verticle_token');
+        localStorage.removeItem('verticle_user');
+        window.location.href = '/login';
+      }
+
       const error = new Error(data.message || `API request failed with status ${response.status}`);
       (error as any).status = response.status;
       (error as any).data = data;
