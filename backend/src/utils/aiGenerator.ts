@@ -22,50 +22,54 @@ export const generateAIAssessment = async (context: CourseContext): Promise<Ques
     return fallbackGeneration(context);
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
+  const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+  const genAI = new GoogleGenerativeAI(apiKey);
 
-    const modulesDescription = context.modules.map(m => {
-      const subModulesText = (m.subModules || []).map((sm: any) => `    - Sub-Module: ${sm.title}\n      Details: ${sm.content || 'N/A'}`).join("\n");
-      return `- Module: ${m.title}\n  Description: ${m.content || 'N/A'}\n  Skills: ${(m.skillsCovered || []).join(", ")}${subModulesText ? '\n  Sub-Modules:\n' + subModulesText : ''}`;
-    }).join("\n\n");
+  for (const modelName of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
 
-    const prompt = `
-      You are an expert curriculum designer. Generate a high-fidelity assessment for a course titled "${context.title}".
-      Course Description: ${context.description}
+      const modulesDescription = context.modules.map(m => {
+        const subModulesText = (m.subModules || []).map((sm: any) => `    - Sub-Module: ${sm.title}\n      Details: ${sm.content || 'N/A'}`).join("\n");
+        return `- Module: ${m.title}\n  Description: ${m.content || 'N/A'}\n  Skills: ${(m.skillsCovered || []).join(", ")}${subModulesText ? '\n  Sub-Modules:\n' + subModulesText : ''}`;
+      }).join("\n\n");
+
+      const prompt = `
+        You are an expert curriculum designer. Generate a high-fidelity assessment for a course titled "${context.title}".
+        Course Description: ${context.description}
+        
+        MODULES AND SKILLS:
+        ${modulesDescription}
+
+        REQUIREMENTS:
+        1. For EACH module listed above, generate EXACTLY 3 multiple-choice questions (Total: ${context.modules.length * 3} questions).
+        2. Each question must have 4 options.
+        3. For each question, include "skillTags" that match the skills covered in its respective module.
+        4. Focus on technical accuracy and practical application.
+        5. Return the result ONLY as a valid JSON array of objects with this structure:
+           {
+             "question": "string",
+             "options": ["string", "string", "string", "string"],
+             "correctAnswer": number (0-3 index),
+             "explanation": "string (explain why the answer is correct)",
+             "skillTags": ["string"]
+           }
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
       
-      MODULES AND SKILLS:
-      ${modulesDescription}
-
-      REQUIREMENTS:
-      1. For EACH module listed above, generate EXACTLY 3 multiple-choice questions (Total: ${context.modules.length * 3} questions).
-      2. Each question must have 4 options.
-      3. For each question, include "skillTags" that match the skills covered in its respective module.
-      4. Focus on technical accuracy and practical application.
-      5. Return the result ONLY as a valid JSON array of objects with this structure:
-         {
-           "question": "string",
-           "options": ["string", "string", "string", "string"],
-           "correctAnswer": number (0-3 index),
-           "explanation": "string (explain why the answer is correct)",
-           "skillTags": ["string"]
-         }
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    // Clean potential markdown formatting from JSON
-    const cleanJson = text.replace(/```json|```/g, "").trim();
-    const questions: Question[] = JSON.parse(cleanJson);
-
-    return questions;
-  } catch (error) {
-    console.error("[AI] Gemini Generation Error:", error);
-    return fallbackGeneration(context);
+      const cleanJson = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleanJson);
+    } catch (error: any) {
+      console.warn(`[AI] Attempt with ${modelName} failed: ${error.message}. Trying next...`);
+      continue;
+    }
   }
+
+  console.error("[AI] All models failed. Falling back to simulation.");
+  return fallbackGeneration(context);
 };
 
 export const generatePersonalizedPath = async (
@@ -80,46 +84,53 @@ export const generatePersonalizedPath = async (
     return { path: modules.map(m => m.title), suggestions: "Focus on completing all modules to build a solid foundation." };
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
+  const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+  const genAI = new GoogleGenerativeAI(apiKey);
 
-    const prompt = `
-      You are an AI learning strategist. Based on the learner's performance in the course "${courseTitle}", generate a personalized learning path and success suggestions.
+  for (const modelName of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
+
+      const prompt = `
+        You are an AI learning strategist. Based on the learner's performance in the course "${courseTitle}", generate a personalized learning path and success suggestions.
+        
+        TOTAL MODULES:
+        ${modules.map(m => `- ${m.title}`).join("\n")}
+
+        LEARNER PERFORMANCE:
+        - Strengths: ${performance.strengths.join(", ") || "None identified yet"}
+        - Weaknesses: ${performance.weaknesses.join(", ") || "None identified yet"}
+
+        REQUIREMENTS:
+        1. SKIP modules where the user has shown high proficiency (strengths).
+        2. PRIORITIZE modules that address the user's weaknesses.
+        3. Provide 2-3 specific "Focus Suggestions" on what concepts or habits the user should prioritize to succeed.
+        4. Return the result ONLY as a JSON object:
+        {
+          "path": ["Module Title 1", "Module Title 2"],
+          "suggestions": "Your personalized focus advice here..."
+        }
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
       
-      TOTAL MODULES:
-      ${modules.map(m => `- ${m.title}`).join("\n")}
+      const cleanJson = text.replace(/```json|```/g, "").trim();
+      const resultData = JSON.parse(cleanJson);
 
-      LEARNER PERFORMANCE:
-      - Strengths: ${performance.strengths.join(", ") || "None identified yet"}
-      - Weaknesses: ${performance.weaknesses.join(", ") || "None identified yet"}
-
-      REQUIREMENTS:
-      1. SKIP modules where the user has shown high proficiency (strengths).
-      2. PRIORITIZE modules that address the user's weaknesses.
-      3. Provide 2-3 specific "Focus Suggestions" on what concepts or habits the user should prioritize to succeed.
-      4. Return the result ONLY as a JSON object:
-      {
-        "path": ["Module Title 1", "Module Title 2"],
-        "suggestions": "Your personalized focus advice here..."
-      }
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    const cleanJson = text.replace(/```json|```/g, "").trim();
-    const resultData = JSON.parse(cleanJson);
-
-    return {
-      path: resultData.path || modules.map(m => m.title),
-      suggestions: resultData.suggestions || "Focus on consistent practice in your weak areas."
-    };
-  } catch (error) {
-    console.error("[AI] Path Generation Error:", error);
-    return { path: modules.map(m => m.title), suggestions: "Maintain your learning momentum." };
+      return {
+        path: resultData.path || modules.map(m => m.title),
+        suggestions: resultData.suggestions || "Focus on consistent practice in your weak areas."
+      };
+    } catch (error: any) {
+      console.warn(`[AI] Path attempt with ${modelName} failed: ${error.message}. Trying next...`);
+      continue;
+    }
   }
+
+  console.error("[AI] All path models failed. Using defaults.");
+  return { path: modules.map(m => m.title), suggestions: "Maintain your learning momentum." };
 };
 
 const fallbackGeneration = (context: CourseContext): Question[] => {

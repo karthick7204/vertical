@@ -30,7 +30,7 @@ export const registerUser = async (req: Request, res: Response) => {
     if (user) {
       // Create organization if name provided
       if (organizationName) {
-        const organization = await Organization.create({
+          const organization = await Organization.create({
           name: organizationName,
           adminId: user._id,
         });
