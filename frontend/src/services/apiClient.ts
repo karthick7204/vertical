@@ -32,7 +32,7 @@ class ApiClient {
       if (response.status === 401 && typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
         localStorage.removeItem('verticle_token');
         localStorage.removeItem('verticle_user');
-        window.location.href = '/login';
+        window.dispatchEvent(new CustomEvent('session-expired'));
       }
 
       const error = new Error(data.message || `API request failed with status ${response.status}`);

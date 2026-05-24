@@ -13,14 +13,16 @@ import {
   LogOut,
   Zap,
   Trash2,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { courseService } from '@/services/courseService';
 import { learnerService, Enrollment } from '@/services/learnerService';
+import { assessmentService } from '@/services/assessmentService';
 
 export default function LearnerDashboard() {
   const { user, logout } = useAuth();
@@ -53,21 +55,73 @@ export default function LearnerDashboard() {
     fetchData();
   }, []);
 
-  const handleEnroll = async (courseId: string) => {
+  const [selectedCourseForEnroll, setSelectedCourseForEnroll] = useState<any | null>(null);
+  const [showAssessmentPrompt, setShowAssessmentPrompt] = useState(false);
+
+  const promptEnroll = (course: any) => {
+    setSelectedCourseForEnroll(course);
+    setShowAssessmentPrompt(true);
+  };
+
+  const handleConfirmAssessment = async () => {
+    if (!selectedCourseForEnroll) return;
+    const courseId = selectedCourseForEnroll._id;
     try {
+      setLoading(true);
+      setShowAssessmentPrompt(false);
       await learnerService.enroll(courseId);
       router.push(`/dashboard/learner/courses/${courseId}/assessment`);
     } catch (error) {
       console.error('Enrollment failed:', error);
       alert('Failed to enroll in the curriculum.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleCancelEnrollment = async (enrollmentId: string) => {
-    if (!window.confirm('Are you sure you want to cancel this enrollment?')) return;
-    
+  const handleSkipAssessment = async () => {
+    if (!selectedCourseForEnroll) return;
+    const courseId = selectedCourseForEnroll._id;
     try {
-      await learnerService.cancelEnrollment(enrollmentId);
+      setLoading(true);
+      setShowAssessmentPrompt(false);
+      await learnerService.enroll(courseId);
+      // Refresh data
+      const [courses, enrollments] = await Promise.all([
+        courseService.getAllCourses(),
+        learnerService.getMyEnrollments()
+      ]);
+      const enrolledCourseIds = new Set(enrollments.map(e => e.courseId._id));
+      setAvailableCourses(courses.filter((c: any) => !enrolledCourseIds.has(c._id)));
+      setMyEnrollments(enrollments);
+    } catch (error) {
+      console.error('Enrollment failed:', error);
+      alert('Failed to enroll in the curriculum.');
+    } finally {
+      setLoading(false);
+      setSelectedCourseForEnroll(null);
+    }
+  };
+
+  const handleCancelEnroll = () => {
+    setShowAssessmentPrompt(false);
+    setSelectedCourseForEnroll(null);
+  };
+
+  const [enrollmentIdToCancel, setEnrollmentIdToCancel] = useState<string | null>(null);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+
+  const promptCancelEnrollment = (enrollmentId: string) => {
+    setEnrollmentIdToCancel(enrollmentId);
+    setShowCancelConfirmation(true);
+  };
+
+  const confirmCancelEnrollment = async () => {
+    if (!enrollmentIdToCancel) return;
+    try {
+      setLoading(true);
+      setShowCancelConfirmation(false);
+      await learnerService.cancelEnrollment(enrollmentIdToCancel);
       // Refresh data
       const [courses, enrollments] = await Promise.all([
         courseService.getAllCourses(),
@@ -79,6 +133,35 @@ export default function LearnerDashboard() {
     } catch (error) {
       console.error('Cancellation failed:', error);
       alert('Failed to cancel enrollment.');
+    } finally {
+      setLoading(false);
+      setEnrollmentIdToCancel(null);
+    }
+  };
+
+  const closeCancelConfirmation = () => {
+    setShowCancelConfirmation(false);
+    setEnrollmentIdToCancel(null);
+  };
+
+  const [selectedCourseForPath, setSelectedCourseForPath] = useState<any | null>(null);
+  const [personalizedPathData, setPersonalizedPathData] = useState<any | null>(null);
+  const [loadingPath, setLoadingPath] = useState(false);
+
+  const handleViewPersonalizedPath = async (course: any) => {
+    setSelectedCourseForPath(course);
+    setLoadingPath(true);
+    try {
+      const data = await assessmentService.getPersonalizedPath(course._id);
+      setPersonalizedPathData(data);
+    } catch (error) {
+      console.error('Failed to fetch personalized path:', error);
+      setPersonalizedPathData({
+        recommendedOrder: [],
+        suggestions: "No personalized path generated yet. Please take the initial assessment."
+      });
+    } finally {
+      setLoadingPath(false);
     }
   };
 
@@ -175,13 +258,13 @@ export default function LearnerDashboard() {
                       Optimized Trajectory
                     </h3>
                     <div className="flex flex-wrap gap-4">
-                      {user.personalizedPath.map((moduleName, i) => (
+                      {user.personalizedPath.map((moduleName: string, i: number) => (
                         <div key={i} className="flex items-center gap-3">
                           <div className="bg-white text-black w-8 h-8 flex items-center justify-center font-black italic border-2 border-brand-primary">
                             {i + 1}
                           </div>
                           <span className="text-white text-xs font-bold uppercase tracking-widest">{moduleName}</span>
-                          {i < user.personalizedPath.length - 1 && (
+                          {i < (user.personalizedPath?.length || 0) - 1 && (
                             <ArrowRight className="w-4 h-4 text-brand-primary" />
                           )}
                         </div>
@@ -209,7 +292,8 @@ export default function LearnerDashboard() {
                     <motion.div 
                       key={enrollment._id}
                       whileHover={{ y: -4 }}
-                      className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000000] flex flex-col"
+                      onClick={() => handleViewPersonalizedPath(enrollment.courseId)}
+                      className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000000] flex flex-col cursor-pointer"
                     >
                       <div className="p-6 border-b-4 border-black flex-1">
                         <div className="flex justify-between items-start mb-4">
@@ -244,7 +328,10 @@ export default function LearnerDashboard() {
                         
                         <div className="flex gap-3 items-center">
                           <button 
-                            onClick={() => handleCancelEnrollment(enrollment._id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              promptCancelEnrollment(enrollment._id);
+                            }}
                             className="bg-white border-2 border-black p-3 hover:bg-red-50 transition-all shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
                             title="Cancel Enrollment"
                           >
@@ -259,6 +346,7 @@ export default function LearnerDashboard() {
                               </div>
                               <Link 
                                 href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
+                                onClick={(e) => e.stopPropagation()}
                                 className="text-[10px] font-black uppercase underline hover:text-brand-primary"
                               >
                                 Review Results
@@ -267,6 +355,7 @@ export default function LearnerDashboard() {
                           ) : (
                             <Link 
                               href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
+                              onClick={(e) => e.stopPropagation()}
                               className="bg-black text-white px-6 py-3 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
                             >
                               Launch
@@ -313,7 +402,7 @@ export default function LearnerDashboard() {
                             {course.description}
                           </p>
                           <button 
-                            onClick={() => handleEnroll(course._id)}
+                            onClick={() => promptEnroll(course)}
                             className="bg-black text-white px-8 py-4 font-black uppercase text-xs tracking-widest hover:bg-zinc-800 transition-all flex items-center gap-3 shadow-[4px_4px_0px_0px_#facc15]"
                           >
                             Initialize Training
@@ -353,7 +442,7 @@ export default function LearnerDashboard() {
                         </p>
                       </div>
                       <button 
-                        onClick={() => handleEnroll(course._id)}
+                        onClick={() => promptEnroll(course)}
                         className="w-full border-4 border-black py-4 font-black uppercase text-xs tracking-widest hover:bg-brand-primary transition-all flex items-center justify-center gap-3"
                       >
                         Enroll Now
@@ -365,6 +454,269 @@ export default function LearnerDashboard() {
             </section>
           </div>
         </main>
+
+        {/* Custom Confirmation Modal */}
+        <AnimatePresence>
+          {showAssessmentPrompt && selectedCourseForEnroll && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-lg bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000000] text-black relative"
+              >
+                <button 
+                  onClick={handleCancelEnroll}
+                  className="absolute top-4 right-4 text-black hover:bg-zinc-100 border-2 border-black p-1 transition-all"
+                  aria-label="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 border-2 border-black bg-brand-primary flex items-center justify-center font-black">
+                    <Zap className="w-5 h-5 text-black fill-black" />
+                  </div>
+                  <h3 className="text-xl font-black uppercase italic tracking-tight">Initiate Training?</h3>
+                </div>
+
+                <p className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-2">
+                  Curriculum: {selectedCourseForEnroll.title}
+                </p>
+                
+                <p className="text-xs font-bold text-zinc-700 leading-relaxed mb-8 uppercase tracking-widest bg-zinc-50 p-4 border-2 border-dashed border-black">
+                  This training includes a personalized skill assessment layer. Would you like to take the assessment now to customize your learning path?
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleConfirmAssessment}
+                    className="w-full bg-brand-primary text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                  >
+                    Yes, Take Assessment
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  
+                  <button
+                    onClick={handleSkipAssessment}
+                    className="w-full bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                  >
+                    No, Just Enroll
+                  </button>
+                  
+                  <button
+                    onClick={handleCancelEnroll}
+                    className="w-full bg-zinc-100 text-zinc-500 hover:text-black py-2 font-black uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all"
+                  >
+                    Cancel Setup
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Custom Delete Confirmation Modal */}
+        <AnimatePresence>
+          {showCancelConfirmation && enrollmentIdToCancel && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-md bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000000] text-black relative"
+              >
+                <button 
+                  onClick={closeCancelConfirmation}
+                  className="absolute top-4 right-4 text-black hover:bg-zinc-100 border-2 border-black p-1 transition-all"
+                  aria-label="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 border-2 border-black bg-red-100 flex items-center justify-center font-black">
+                    <Trash2 className="w-5 h-5 text-red-600" />
+                  </div>
+                  <h3 className="text-xl font-black uppercase italic tracking-tight text-red-600">Cancel Enrollment?</h3>
+                </div>
+
+                <p className="text-xs font-bold text-zinc-700 leading-relaxed mb-8 uppercase tracking-widest bg-zinc-50 p-4 border-2 border-dashed border-black">
+                  Are you sure you want to cancel this enrollment? This will remove the curriculum from your active roadmap and reset all progress.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={confirmCancelEnrollment}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                  >
+                    Delete
+                  </button>
+                  
+                  <button
+                    onClick={closeCancelConfirmation}
+                    className="flex-1 bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Custom Personalized Path Modal */}
+        <AnimatePresence>
+          {selectedCourseForPath && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-5xl bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000000] text-black relative"
+              >
+                <button 
+                  onClick={() => {
+                    setSelectedCourseForPath(null);
+                    setPersonalizedPathData(null);
+                  }}
+                  className="absolute top-4 right-4 text-black hover:bg-zinc-100 border-2 border-black p-1 transition-all"
+                  aria-label="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 border-2 border-black bg-brand-primary flex items-center justify-center font-black">
+                    <Zap className="w-6 h-6 text-black fill-black" />
+                  </div>
+                  <h3 className="text-2xl font-black uppercase italic tracking-tight">Personalized Roadmap</h3>
+                </div>
+
+                <h4 className="text-base font-black uppercase tracking-wider text-zinc-500 mb-6">
+                  Curriculum: {selectedCourseForPath.title}
+                </h4>
+
+                {loadingPath ? (
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <Loader2 className="w-12 h-12 text-brand-primary animate-spin mb-4" />
+                    <span className="text-xs font-black uppercase tracking-widest">Loading Optimized Trajectory...</span>
+                  </div>
+                ) : personalizedPathData && personalizedPathData.recommendedOrder && personalizedPathData.recommendedOrder.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="text-left border-4 border-black p-6 bg-zinc-50 shadow-[4px_4px_0px_0px_#000000]">
+                      <h5 className="text-sm font-black uppercase tracking-widest mb-4 border-b-2 border-black pb-2 flex items-center gap-2">
+                        <Zap className="w-4 h-4 fill-brand-primary text-black" />
+                        Sequence of Study
+                      </h5>
+                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                        {personalizedPathData.recommendedOrder.map((mod: any, index: number) => (
+                          <div key={mod._id} className="flex gap-4 items-start border-b border-zinc-200 pb-4 last:border-b-0 last:pb-0">
+                            <div className="bg-black text-brand-primary text-xs font-black italic w-8 h-8 shrink-0 flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_#000000]">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1">
+                              <h6 className="font-black uppercase text-sm tracking-wider text-black">{mod.title}</h6>
+                              {mod.content && (
+                                <p className="text-xs font-bold text-zinc-600 leading-relaxed mt-1">{mod.content}</p>
+                              )}
+                              {mod.skillsCovered && mod.skillsCovered.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {mod.skillsCovered.map((skill: string, i: number) => (
+                                    <span key={i} className="bg-brand-primary/20 text-[10px] font-black uppercase px-2 py-0.5 border border-black/10 text-black">
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {personalizedPathData.additionalRecommendations && personalizedPathData.additionalRecommendations.length > 0 && (
+                      <div className="p-4 bg-black text-brand-primary border-2 border-black text-xs font-bold uppercase tracking-widest">
+                        Focus Suggestions: "{personalizedPathData.additionalRecommendations.join(' ')}"
+                      </div>
+                    )}
+
+                    <div className="pt-6 border-t-2 border-black mt-6">
+                      <p className="text-xs font-black uppercase tracking-wider text-black mb-4">
+                        Would you like to start this course now?
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => {
+                            setSelectedCourseForPath(null);
+                            setPersonalizedPathData(null);
+                            router.push(`/dashboard/learner/courses/${selectedCourseForPath._id}`);
+                          }}
+                          className="flex-1 bg-brand-primary text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                        >
+                          Start Course
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedCourseForPath(null);
+                            setPersonalizedPathData(null);
+                          }}
+                          className="flex-1 bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="border-4 border-dashed border-zinc-300 p-12 text-center flex flex-col items-center justify-center">
+                      <Zap className="w-12 h-12 text-zinc-300 mb-4 animate-bounce" />
+                      <h5 className="font-black uppercase italic text-zinc-400">No active pathway detected</h5>
+                      <p className="text-xs font-bold text-zinc-400 mt-2 uppercase tracking-widest leading-relaxed">
+                        You must launch and complete the initial assessment layer for this course to construct an optimized learning path.
+                      </p>
+                    </div>
+                    <div className="pt-6 border-t-2 border-black">
+                      <p className="text-xs font-black uppercase tracking-wider text-black mb-4">
+                        Would you like to start the assessment now?
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => {
+                            setSelectedCourseForPath(null);
+                            setPersonalizedPathData(null);
+                            router.push(`/dashboard/learner/courses/${selectedCourseForPath._id}/assessment`);
+                          }}
+                          className="flex-1 bg-brand-primary text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                        >
+                          Start Assessment
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedCourseForPath(null);
+                            setPersonalizedPathData(null);
+                          }}
+                          className="flex-1 bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </ProtectedRoute>
   );

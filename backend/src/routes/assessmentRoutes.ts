@@ -5,7 +5,8 @@ import {
   getAssessmentById, 
   updateAssessment, 
   deleteAssessment,
-  submitScore
+  submitScore,
+  getPersonalizedPathForCourse
 } from '../controllers/assessmentController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
@@ -15,6 +16,7 @@ router.post('/', protect, authorize('HR_ADMIN', 'SUPER_ADMIN'), createAssessment
 router.post('/score', protect, submitScore);
 
 router.get('/course/:courseId', protect, getAssessmentsByCourse);
+router.get('/course/:courseId/path', protect, getPersonalizedPathForCourse);
 
 router.route('/:id')
   .get(protect, getAssessmentById)

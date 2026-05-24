@@ -10,9 +10,10 @@ import { generateAccessToken, generateRefreshToken, sendRefreshToken } from '../
 // @access  Public
 export const registerUser = async (req: Request, res: Response) => {
   const { name, email, password, role, organizationName } = req.body;
+  const sanitizedEmail = email ? email.trim().toLowerCase() : '';
 
   try {
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: sanitizedEmail });
 
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
@@ -21,7 +22,7 @@ export const registerUser = async (req: Request, res: Response) => {
     // Start a basic "transaction" feel
     const user = await User.create({
       name,
-      email,
+      email: sanitizedEmail,
       password,
       role: role || 'HR_ADMIN',
       isActivated: true // Self-registered admins are active
@@ -68,9 +69,10 @@ export const registerUser = async (req: Request, res: Response) => {
 // @access  Public
 export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body;
+  const sanitizedEmail = email ? email.trim().toLowerCase() : '';
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: sanitizedEmail });
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const accessToken = generateAccessToken(user._id.toString());
@@ -156,9 +158,10 @@ import sendEmail from '../utils/sendEmail.js';
 // @access  Private/Admin
 export const inviteUser = async (req: Request, res: Response) => {
   const { name, email, role, organizationId, password } = req.body;
+  const sanitizedEmail = email ? email.trim().toLowerCase() : '';
 
   try {
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: sanitizedEmail });
 
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
@@ -170,7 +173,7 @@ export const inviteUser = async (req: Request, res: Response) => {
 
     const user = await User.create({
       name,
-      email,
+      email: sanitizedEmail,
       password,
       role: role || 'LEARNER',
       organizationId,

@@ -39,7 +39,7 @@ export default function HRInvitationsPage() {
     try {
       await authService.invite({
         name,
-        email,
+        email: email.trim().toLowerCase(),
         password,
         role,
         organizationId: user?.organizationId
@@ -150,8 +150,8 @@ export default function HRInvitationsPage() {
                     <input 
                       type="email" 
                       required
-                      placeholder="NAME@DOMAIN.COM"
-                      className="w-full p-4 border-2 border-black bg-zinc-50 font-bold uppercase text-xs focus:bg-white focus:outline-none transition-all"
+                      placeholder="name@domain.com"
+                      className="w-full p-4 border-2 border-black bg-zinc-50 font-bold lowercase text-xs focus:bg-white focus:outline-none transition-all"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />

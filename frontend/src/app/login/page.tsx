@@ -25,7 +25,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const data = await authService.login({ email, password });
+      const data = await authService.login({ email: email.trim().toLowerCase(), password });
       
       login(data.accessToken, {
         id: data._id,
@@ -72,6 +72,12 @@ export default function LoginPage() {
             </div>
           )}
 
+          {searchParams.get('expired') === 'true' && (
+            <div className="mb-6 p-4 bg-amber-100 border-2 border-amber-500 text-amber-700 font-black text-xs uppercase tracking-widest text-center">
+              Session expired. Please log in again.
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 p-4 bg-red-100 border-2 border-red-600 text-red-600 font-black text-xs uppercase tracking-widest text-center">
               {error}
@@ -88,8 +94,8 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full px-4 py-4 bg-white border-2 border-black rounded-none text-black placeholder-zinc-400 focus:outline-none focus:bg-brand-primary/10 transition-all text-sm font-bold uppercase tracking-widest"
-                placeholder="USER@DOMAIN.COM"
+                className="block w-full px-4 py-4 bg-white border-2 border-black rounded-none text-black placeholder-zinc-400 focus:outline-none focus:bg-brand-primary/10 transition-all text-sm font-bold lowercase tracking-widest"
+                placeholder="user@domain.com"
               />
             </div>
 

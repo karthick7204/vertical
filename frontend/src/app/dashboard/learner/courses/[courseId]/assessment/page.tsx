@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import { assessmentService, Assessment, Question } from '@/services/assessmentService';
+import { learnerService } from '@/services/learnerService';
 
 export default function AssessmentPage() {
   const params = useParams();
@@ -31,12 +32,42 @@ export default function AssessmentPage() {
   const [correctQuestionIndices, setCorrectQuestionIndices] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
+  const [personalizedPathData, setPersonalizedPathData] = useState<any>(null);
+  const [fetchingPath, setFetchingPath] = useState(false);
+
+  const fetchPathAndDisplay = async () => {
+    try {
+      setFetchingPath(true);
+      const data = await assessmentService.getPersonalizedPath(courseId);
+      setPersonalizedPathData(data);
+    } catch (error) {
+      console.error('Failed to fetch personalized path:', error);
+      alert('Failed to retrieve personalized learning roadmap.');
+    } finally {
+      setFetchingPath(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAssessment = async () => {
       try {
-        const data = await assessmentService.getAssessmentByCourseId(courseId);
+        const [data, myEnrollments] = await Promise.all([
+          assessmentService.getAssessmentByCourseId(courseId),
+          learnerService.getMyEnrollments()
+        ]);
         setAssessment(data);
+
+        const activeEnrollment = myEnrollments.find(e => (e.courseId?._id || e.courseId) === courseId);
+        if (activeEnrollment && activeEnrollment.status === 'completed') {
+          setScore(activeEnrollment.score || 0);
+          setIsFinished(true);
+          try {
+            const pathData = await assessmentService.getPersonalizedPath(courseId);
+            setPersonalizedPathData(pathData);
+          } catch (pathErr) {
+            console.error('Failed to pre-fetch path data:', pathErr);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch assessment:', error);
       } finally {
@@ -78,6 +109,26 @@ export default function AssessmentPage() {
       }
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!isAnswered) {
+          if (selectedOption !== null) {
+            handleSubmitAnswer();
+          }
+        } else {
+          handleNextQuestion();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAnswered, selectedOption, handleSubmitAnswer, handleNextQuestion]);
 
   if (loading) {
     return (
@@ -122,21 +173,85 @@ export default function AssessmentPage() {
             <h1 className="text-4xl font-black uppercase tracking-tight italic mb-2">Analysis Complete</h1>
             <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-10">We have mapped your skill proficiency for: {assessment.title}</p>
             
-            <div className="bg-black text-brand-primary p-8 border-4 border-black mb-12 shadow-[8px_8px_0px_0px_#000000]">
-              <h3 className="text-xl font-black uppercase italic mb-4">Personalized Path Generated</h3>
-              <p className="text-xs font-bold uppercase tracking-widest opacity-80 leading-relaxed">
-                Based on your responses, our AI has architected a bespoke learning trajectory to optimize your growth.
-              </p>
-            </div>
+            {personalizedPathData ? (
+              <div className="text-left mb-12 border-4 border-black p-6 bg-zinc-50 shadow-[8px_8px_0px_0px_#000000]">
+                <h3 className="text-sm font-black uppercase italic mb-4 border-b-2 border-black pb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4 fill-brand-primary text-black" />
+                  Your Optimized Learning Journey:
+                </h3>
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                  {personalizedPathData.recommendedOrder.map((mod: any, index: number) => (
+                    <div key={mod._id} className="flex gap-3 items-start border-b border-zinc-200 pb-3 last:border-b-0 last:pb-0">
+                      <div className="bg-black text-brand-primary text-[10px] font-black italic w-6 h-6 shrink-0 flex items-center justify-center border border-black">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-black uppercase text-xs tracking-wider text-black">{mod.title}</h4>
+                        {mod.content && (
+                          <p className="text-[10px] text-zinc-600 line-clamp-2 mt-0.5">{mod.content}</p>
+                        )}
+                        {mod.skillsCovered && mod.skillsCovered.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {mod.skillsCovered.map((skill: string, i: number) => (
+                              <span key={i} className="bg-brand-primary/20 text-[8px] font-black uppercase px-1 border border-black/10 text-black">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-black text-brand-primary p-8 border-4 border-black mb-12 shadow-[8px_8px_0px_0px_#000000]">
+                <h3 className="text-xl font-black uppercase italic mb-4 text-brand-primary">Personalized Path Generated</h3>
+                <p className="text-xs font-bold uppercase tracking-widest opacity-80 leading-relaxed text-brand-primary">
+                  Based on your responses, our AI has architected a bespoke learning trajectory to optimize your growth.
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-col gap-4">
-              <button 
-                onClick={() => router.push('/dashboard/learner')}
-                className="w-full bg-brand-primary text-black border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
-              >
-                Launch Personalized Path
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              {!personalizedPathData ? (
+                <>
+                  <button 
+                    onClick={fetchPathAndDisplay}
+                    disabled={fetchingPath}
+                    className="w-full bg-black text-brand-primary border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {fetchingPath ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-brand-primary" />
+                        Analyzing Knowledge Base...
+                      </>
+                    ) : (
+                      <>
+                        View Personalized Path
+                        <ChevronRight className="w-4 h-4 text-brand-primary" />
+                      </>
+                    )}
+                  </button>
+
+                  <button 
+                    onClick={() => router.push(`/dashboard/learner/courses/${courseId}`)}
+                    className="w-full bg-brand-primary text-black border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
+                  >
+                    Launch Personalized Path
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => router.push(`/dashboard/learner/courses/${courseId}`)}
+                  className="w-full bg-brand-primary text-black border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
+                >
+                  Launch Personalized Path
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+
               <button 
                 onClick={() => window.location.reload()}
                 className="w-full bg-white border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest hover:bg-zinc-100 transition-all"

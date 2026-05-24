@@ -5,7 +5,10 @@ import {
   addModule, 
   getCourseModules, 
   reorderModules,
-  deleteCourse 
+  deleteCourse,
+  getCourseProgress,
+  updateModuleProgress,
+  getCourseById
 } from '../controllers/courseController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
@@ -16,6 +19,7 @@ router.route('/')
   .get(protect, getCourses);
 
 router.route('/:id')
+  .get(protect, getCourseById)
   .delete(protect, authorize('HR_ADMIN', 'SUPER_ADMIN'), deleteCourse);
 
 router.route('/:courseId/modules')
@@ -24,5 +28,11 @@ router.route('/:courseId/modules')
 
 router.route('/:courseId/modules/reorder')
   .put(protect, authorize('HR_ADMIN', 'SUPER_ADMIN'), reorderModules);
+
+router.route('/:courseId/progress')
+  .get(protect, getCourseProgress);
+
+router.route('/:courseId/progress/module/:moduleId')
+  .put(protect, updateModuleProgress);
 
 export default router;

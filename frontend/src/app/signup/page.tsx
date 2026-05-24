@@ -29,7 +29,7 @@ export default function SignupPage() {
     try {
       const data = await authService.register({
         name: formData.name,
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: 'HR_ADMIN',
         organizationName: formData.orgName
@@ -40,7 +40,7 @@ export default function SignupPage() {
         name: data.name,
         email: data.email,
         role: data.role,
-        organizationId: formData.orgName
+        organizationId: data.organizationId
       });
       
       router.push('/dashboard/hr');
@@ -131,8 +131,8 @@ export default function SignupPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="block w-full px-4 py-4 bg-white border-2 border-black rounded-none text-black placeholder-zinc-400 focus:outline-none focus:bg-brand-primary/10 transition-all text-sm font-bold uppercase tracking-widest"
-                placeholder="EMAIL@DOMAIN.COM"
+                className="block w-full px-4 py-4 bg-white border-2 border-black rounded-none text-black placeholder-zinc-400 focus:outline-none focus:bg-brand-primary/10 transition-all text-sm font-bold lowercase tracking-widest"
+                placeholder="email@domain.com"
               />
             </div>
 

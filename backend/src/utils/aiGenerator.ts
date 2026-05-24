@@ -91,21 +91,31 @@ export const generatePersonalizedPath = async (
     try {
       const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
 
+      // Format detailed description of modules including skills covered
+      const modulesDescription = modules.map((m, idx) => {
+        const skillsText = (m.skillsCovered || []).join(", ");
+        const subModulesText = (m.subModules || []).map((sm: any) => `  - Sub-Module: ${sm.title}`).join("\n");
+        return `Module #${idx + 1}: ${m.title}\nDescription: ${m.content || 'N/A'}\nSkills Covered: ${skillsText || 'N/A'}${subModulesText ? '\nSub-Modules:\n' + subModulesText : ''}`;
+      }).join("\n\n");
+
       const prompt = `
-        You are an AI learning strategist. Based on the learner's performance in the course "${courseTitle}", generate a personalized learning path and success suggestions.
-        
-        TOTAL MODULES:
-        ${modules.map(m => `- ${m.title}`).join("\n")}
+        You are an elite AI learning strategist. Your task is to analyze the learner's existing knowledge based on their assessment performance, cross-reference it with the available course modules for "${courseTitle}", and generate an optimized, personalized structured learning path.
 
-        LEARNER PERFORMANCE:
-        - Strengths: ${performance.strengths.join(", ") || "None identified yet"}
-        - Weaknesses: ${performance.weaknesses.join(", ") || "None identified yet"}
+        AVAILABLE COURSE MODULES:
+        ${modulesDescription}
 
-        REQUIREMENTS:
-        1. SKIP modules where the user has shown high proficiency (strengths).
-        2. PRIORITIZE modules that address the user's weaknesses.
-        3. Provide 2-3 specific "Focus Suggestions" on what concepts or habits the user should prioritize to succeed.
-        4. Return the result ONLY as a JSON object:
+        LEARNER ASSESSMENT RESULTS:
+        - Mastered Skills (Strengths): ${performance.strengths.join(", ") || "None identified"}
+        - Areas for Improvement (Weaknesses): ${performance.weaknesses.join(", ") || "None identified"}
+
+        INSTRUCTIONS:
+        1. Analyze the learner's existing knowledge based on the assessment performance.
+        2. Generate a personalized structured learning path containing ONLY the modules the learner actually needs to study.
+        3. EXCLUDE modules that cover concepts the learner has already mastered (where all or most of the module's skills are in the Mastered Skills list).
+        4. INCLUDE modules where the learner has shown weaknesses or where skills are not yet mastered.
+        5. Return the recommended module names in a clear, ordered, and structured format representing the optimized learning journey.
+        6. Provide 2-3 specific "Focus Suggestions" for their learning journey based on their profile.
+        7. Return the result ONLY as a valid JSON object matching this structure:
         {
           "path": ["Module Title 1", "Module Title 2"],
           "suggestions": "Your personalized focus advice here..."

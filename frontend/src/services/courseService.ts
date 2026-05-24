@@ -19,5 +19,13 @@ export const courseService = {
 
   async deleteCourse(id: string) {
     return apiClient.delete(`/courses/${id}`);
+  },
+
+  async getCourseProgress(courseId: string) {
+    return apiClient.get(`/courses/${courseId}/progress`);
+  },
+
+  async updateModuleProgress(courseId: string, moduleId: string, status: string, completionPercentage: number) {
+    return apiClient.put(`/courses/${courseId}/progress/module/${moduleId}`, { status, completionPercentage });
   }
 };

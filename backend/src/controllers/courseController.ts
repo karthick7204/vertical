@@ -4,6 +4,9 @@ import Module from '../models/Module.js';
 import Assessment from '../models/Assessment.js';
 import { generateAIAssessment } from '../utils/aiGenerator.js';
 import { type AuthRequest } from '../middleware/authMiddleware.js';
+import ProgressTracking from '../models/ProgressTracking.js';
+import Enrollment from '../models/Enrollment.js';
+import PersonalizedPath from '../models/PersonalizedPath.js';
 
 // @desc    Create a new course
 // @route   POST /api/courses
@@ -143,6 +146,84 @@ export const deleteCourse = async (req: Request, res: Response) => {
     await course.deleteOne();
 
     res.json({ message: 'Course and associated modules deleted' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get progress tracking for all modules in a course for current user
+// @route   GET /api/courses/:courseId/progress
+// @access  Private
+export const getCourseProgress = async (req: AuthRequest, res: Response) => {
+  const courseId = req.params.courseId as string;
+  try {
+    const progressList = await ProgressTracking.find({ userId: req.user._id, courseId });
+    res.json(progressList);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update progress tracking for a specific module
+// @route   PUT /api/courses/:courseId/progress/module/:moduleId
+// @access  Private
+export const updateModuleProgress = async (req: AuthRequest, res: Response) => {
+  const courseId = req.params.courseId as string;
+  const moduleId = req.params.moduleId as string;
+  const userId = req.user?._id;
+  const { status, completionPercentage } = req.body;
+
+  try {
+    const progress = await ProgressTracking.findOneAndUpdate(
+      { userId, courseId, moduleId } as any,
+      { 
+        status, 
+        completionPercentage,
+        lastAccessed: new Date()
+      },
+      { upsert: true, new: true }
+    );
+
+    // Update the overall enrollment progress percentage
+    const [enrollment, pathDoc] = await Promise.all([
+      Enrollment.findOne({ userId, courseId } as any),
+      PersonalizedPath.findOne({ userId, courseId } as any)
+    ]);
+
+    if (enrollment && pathDoc && pathDoc.recommendedOrder.length > 0) {
+      const allProgress = await ProgressTracking.find({ 
+        userId, 
+        courseId, 
+        moduleId: { $in: pathDoc.recommendedOrder } 
+      } as any);
+
+      const totalPathModules = pathDoc.recommendedOrder.length;
+      let sum = 0;
+      allProgress.forEach(p => {
+        sum += p.completionPercentage || 0;
+      });
+      const overallProgress = Math.round(sum / totalPathModules);
+      
+      enrollment.progress = Math.min(100, Math.max(0, overallProgress));
+      await enrollment.save();
+    }
+
+    res.json({ progress });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get course by ID
+// @route   GET /api/courses/:id
+// @access  Private
+export const getCourseById = async (req: Request, res: Response) => {
+  try {
+    const course = await Course.findById(req.params.id).populate('organizationId', 'name');
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    res.json(course);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

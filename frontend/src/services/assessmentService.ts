@@ -22,5 +22,9 @@ export const assessmentService = {
 
   submitScore: async (courseId: string, score: number, totalQuestions: number, correctQuestionIndices: number[]) => {
     return apiClient.post('/assessments/score', { courseId, score, totalQuestions, correctQuestionIndices });
+  },
+
+  getPersonalizedPath: async (courseId: string): Promise<any> => {
+    return apiClient.get(`/assessments/course/${courseId}/path`);
   }
 };

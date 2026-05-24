@@ -5,6 +5,8 @@ import Enrollment from '../models/Enrollment.js';
 import User from '../models/User.js';
 import LearnerScore from '../models/LearnerScore.js';
 import Module from '../models/Module.js';
+import PersonalizedPath from '../models/PersonalizedPath.js';
+import ProgressTracking from '../models/ProgressTracking.js';
 import { generatePersonalizedPath } from '../utils/aiGenerator.js';
 import { type AuthRequest } from '../middleware/authMiddleware.js';
 
@@ -198,6 +200,65 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
           { strengths, weaknesses }
         );
         
+        // Map recommended module titles back to their ObjectIds, maintaining the order returned by the LLM
+        const recommendedOrder: any[] = [];
+        const skippedModules: any[] = [];
+
+        const moduleMap = new Map<string, any>();
+        modules.forEach(m => {
+          moduleMap.set(m.title.toLowerCase().trim(), m);
+        });
+
+        const recommendedTitlesSet = new Set<string>();
+        result.path.forEach((title: string) => {
+          const key = title.toLowerCase().trim();
+          const matchedModule = moduleMap.get(key);
+          if (matchedModule) {
+            recommendedOrder.push(matchedModule._id);
+            recommendedTitlesSet.add(key);
+          }
+        });
+
+        modules.forEach(m => {
+          const key = m.title.toLowerCase().trim();
+          if (!recommendedTitlesSet.has(key)) {
+            skippedModules.push(m._id);
+          }
+        });
+
+        // Save to PersonalizedPath collection
+        await PersonalizedPath.findOneAndUpdate(
+          { userId: req.user._id, courseId },
+          {
+            userId: req.user._id,
+            courseId,
+            recommendedOrder,
+            skippedModules,
+            additionalRecommendations: result.suggestions ? [result.suggestions] : []
+          },
+          { upsert: true, new: true }
+        );
+
+        // Initialize or verify ProgressTracking entries for the recommended modules to preserve progression flow
+        await Promise.all(
+          recommendedOrder.map((moduleId) =>
+            ProgressTracking.findOneAndUpdate(
+              { userId: req.user._id, courseId, moduleId },
+              {
+                $setOnInsert: {
+                  userId: req.user._id,
+                  courseId,
+                  moduleId,
+                  status: 'NOT_STARTED',
+                  completionPercentage: 0,
+                  lastAccessed: new Date()
+                }
+              },
+              { upsert: true, new: true }
+            )
+          )
+        );
+
         user.personalizedPath = result.path;
         user.focusSuggestions = result.suggestions;
         await user.save();
@@ -213,6 +274,27 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
       personalizedPath: user.personalizedPath,
       focusSuggestions: user.focusSuggestions
     });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get personalized path for a course
+// @route   GET /api/assessments/course/:courseId/path
+// @access  Private
+export const getPersonalizedPathForCourse = async (req: AuthRequest, res: Response) => {
+  const courseId = req.params.courseId as string;
+
+  try {
+    const pathDoc = await PersonalizedPath.findOne({ userId: req.user._id, courseId })
+      .populate('recommendedOrder')
+      .populate('skippedModules');
+
+    if (!pathDoc) {
+      return res.status(404).json({ message: 'Personalized path not found' });
+    }
+
+    res.json(pathDoc);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
