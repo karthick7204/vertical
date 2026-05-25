@@ -81,10 +81,10 @@ export default function HRInvitationsPage() {
               <Layers className="w-4 h-4" />
               Courses
             </Link>
-            <button className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/learners" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
               <Users className="w-4 h-4" />
               Learners
-            </button>
+            </Link>
             <Link href="/dashboard/hr/invitations" className="w-full flex items-center gap-3 p-3 bg-brand-primary border-2 border-black font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000]">
               <Mail className="w-4 h-4" />
               Invitations

@@ -27,5 +27,9 @@ export const learnerService = {
   
   cancelEnrollment: async (enrollmentId: string) => {
     return apiClient.delete(`/enrollments/${enrollmentId}`);
+  },
+
+  getLearnersProgressReport: async (): Promise<any[]> => {
+    return apiClient.get('/enrollments/report');
   }
 };

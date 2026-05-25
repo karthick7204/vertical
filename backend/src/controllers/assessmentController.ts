@@ -291,7 +291,7 @@ export const getPersonalizedPathForCourse = async (req: AuthRequest, res: Respon
       .populate('skippedModules');
 
     if (!pathDoc) {
-      return res.status(404).json({ message: 'Personalized path not found' });
+      return res.status(200).json(null);
     }
 
     res.json(pathDoc);

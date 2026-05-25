@@ -2,6 +2,7 @@ import { type Response } from 'express';
 import { type AuthRequest } from '../middleware/authMiddleware.js';
 import Enrollment from '../models/Enrollment.js';
 import Course from '../models/Course.js';
+import User from '../models/User.js';
 
 // @desc    Enroll a user in a course
 // @route   POST /api/enrollments
@@ -66,3 +67,56 @@ export const cancelEnrollment = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get all learners and their course progress for admin
+// @route   GET /api/enrollments/report
+// @access  Private (HR_ADMIN, SUPER_ADMIN)
+export const getLearnersProgressReport = async (req: AuthRequest, res: Response) => {
+  try {
+    const adminUser = req.user;
+    if (!adminUser || (adminUser.role !== 'HR_ADMIN' && adminUser.role !== 'SUPER_ADMIN')) {
+      return res.status(403).json({ message: 'Forbidden: Access restricted to administrators' });
+    }
+
+    let userQuery: any = { role: 'LEARNER' };
+    if (adminUser.role === 'HR_ADMIN') {
+      userQuery.organizationId = adminUser.organizationId;
+    }
+
+    const learners = await User.find(userQuery).select('name email department skills createdAt');
+    const learnerIds = learners.map(l => l._id);
+
+    const enrollments = await Enrollment.find({ userId: { $in: learnerIds } })
+      .populate('courseId', 'title category')
+      .sort({ enrolledAt: -1 });
+
+    const report = learners.map(learner => {
+      const learnerEnrollments = enrollments.filter(e => e.userId.toString() === learner._id.toString());
+      return {
+        _id: learner._id,
+        name: learner.name,
+        email: learner.email,
+        department: learner.department || 'N/A',
+        skills: Object.fromEntries(learner.skills || new Map()),
+        createdAt: learner.createdAt,
+        enrollments: learnerEnrollments.map(e => ({
+          enrollmentId: e._id,
+          courseId: (e.courseId as any)?._id,
+          courseTitle: (e.courseId as any)?.title || 'Unknown Course',
+          courseCategory: (e.courseId as any)?.category || 'General',
+          status: e.status,
+          progress: e.progress,
+          score: e.score,
+          totalQuestions: e.totalQuestions,
+          enrolledAt: e.enrolledAt,
+          completedAt: e.completedAt
+        }))
+      };
+    });
+
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
