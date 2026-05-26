@@ -9,6 +9,7 @@ import PersonalizedPath from '../models/PersonalizedPath.js';
 import ProgressTracking from '../models/ProgressTracking.js';
 import { generatePersonalizedPath } from '../utils/aiGenerator.js';
 import { type AuthRequest } from '../middleware/authMiddleware.js';
+import { broadcastProgressUpdate } from './enrollmentController.js';
 
 // @desc    Create a new assessment
 // @route   POST /api/assessments
@@ -108,7 +109,7 @@ export const deleteAssessment = async (req: Request, res: Response) => {
 const sanitizeSkill = (skill: string) => skill.replace(/\./g, '_');
 
 export const submitScore = async (req: AuthRequest, res: Response) => {
-  const { courseId, score, totalQuestions, correctQuestionIndices } = req.body;
+  const { courseId, score, totalQuestions, correctQuestionIndices, userAnswers } = req.body;
 
   try {
     const [enrollment, assessment, user] = await Promise.all([
@@ -123,10 +124,20 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
     // Update Enrollment
     enrollment.score = score;
     enrollment.totalQuestions = totalQuestions;
-    enrollment.status = 'completed';
-    enrollment.completedAt = new Date();
-    enrollment.progress = 100;
+    enrollment.status = 'enrolled';
+    enrollment.progress = 0;
     await enrollment.save();
+
+    broadcastProgressUpdate({
+      type: 'PROGRESS_UPDATE',
+      userId: req.user._id.toString(),
+      courseId: courseId.toString(),
+      progress: 0,
+      status: 'enrolled',
+      score: score,
+      totalQuestions: totalQuestions,
+      completedAt: undefined
+    });
 
     // Update User Skills if questions are provided
     if (assessment) {
@@ -176,6 +187,101 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
         else if (proficiency < 0.4) weaknesses.push(skill);
       });
 
+      // --- Compute detailed metrics for each question and module ---
+      const courseModules = await Module.find({ courseId }).sort({ order: 1 });
+
+      const findRelatedModule = (questionSkillTags: string[], qIdx: number, allModules: any[]) => {
+        let bestModule = null;
+        let maxOverlap = 0;
+
+        for (const mod of allModules) {
+          const overlap = (mod.skillsCovered || []).filter((skill: string) =>
+            (questionSkillTags || []).some(qSkill => qSkill.toLowerCase().trim() === skill.toLowerCase().trim())
+          ).length;
+
+          if (overlap > maxOverlap) {
+            maxOverlap = overlap;
+            bestModule = mod;
+          }
+        }
+
+        // Sequential fallback (default 3 questions per module)
+        if (!bestModule && allModules.length > 0) {
+          const sequentialIdx = Math.floor(qIdx / 3);
+          bestModule = allModules[sequentialIdx] || allModules[allModules.length - 1];
+        }
+
+        return bestModule;
+      };
+
+      const answers = userAnswers || assessment.questions.map((q, idx) => {
+        const isCorrect = correctQuestionIndices && correctQuestionIndices.includes(idx);
+        return {
+          questionIndex: idx,
+          chosenOption: isCorrect ? q.correctAnswer : (q.correctAnswer + 1) % q.options.length,
+          isCorrect
+        };
+      });
+
+      let totalCorrect = 0;
+      let totalIncorrect = 0;
+      const moduleStats = new Map<string, { correct: number; total: number; moduleId?: string }>();
+
+      const questionsPerformance = answers.map((ans: any) => {
+        const qIdx = ans.questionIndex;
+        const question = assessment.questions[qIdx];
+        
+        const relatedModule = findRelatedModule(question?.skillTags || [], qIdx, courseModules);
+        const moduleTitle = relatedModule ? relatedModule.title : 'General';
+        const moduleId = relatedModule ? relatedModule._id : undefined;
+        
+        if (ans.isCorrect) {
+          totalCorrect++;
+        } else {
+          totalIncorrect++;
+        }
+        
+        const stats = moduleStats.get(moduleTitle) || { correct: 0, total: 0, moduleId: moduleId?.toString() };
+        stats.total++;
+        if (ans.isCorrect) {
+          stats.correct++;
+        }
+        moduleStats.set(moduleTitle, stats);
+        
+        return {
+          questionText: question?.question || `Question #${qIdx + 1}`,
+          chosenOption: ans.chosenOption,
+          correctAnswer: question?.correctAnswer || 0,
+          isCorrect: ans.isCorrect,
+          relatedModuleId: moduleId,
+          relatedModuleTitle: moduleTitle
+        };
+      });
+
+      const scorePercentage = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+      const moduleAccuracy = new Map<string, number>();
+      const strongTopics: string[] = [];
+      const weakTopics: string[] = [];
+
+      moduleStats.forEach((stats, title) => {
+        const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+        moduleAccuracy.set(title, accuracy);
+        
+        if (accuracy >= 70) {
+          strongTopics.push(title);
+        } else {
+          weakTopics.push(title);
+        }
+      });
+
+      // Mark untested course modules as weak by default
+      courseModules.forEach(m => {
+        if (!moduleStats.has(m.title)) {
+          weakTopics.push(m.title);
+          moduleAccuracy.set(m.title, 0);
+        }
+      });
+
       // Create LearnerScore record
       await LearnerScore.create({
         userId: req.user._id,
@@ -186,18 +292,31 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
           strengths,
           weaknesses,
           aiSummary: `Learner showed ${strengths.length > 0 ? 'proficiency in ' + strengths.join(', ') : 'moderate understanding'} and might need improvement in ${weaknesses.length > 0 ? weaknesses.join(', ') : 'none'}.`
-        }
+        },
+        questionsPerformance,
+        moduleAccuracy,
+        totalCorrect,
+        totalIncorrect,
+        scorePercentage,
+        weakTopics,
+        strongTopics
       });
 
       // Generate and Save Personalized Path
       try {
-        const modules = await Module.find({ courseId });
         const course = await Course.findById(courseId);
         
         const result = await generatePersonalizedPath(
           course?.title || "Specialized Curriculum",
-          modules,
-          { strengths, weaknesses }
+          courseModules,
+          {
+            scorePercentage,
+            totalCorrect,
+            totalIncorrect,
+            strongTopics,
+            weakTopics,
+            moduleAccuracy: Object.fromEntries(moduleAccuracy)
+          }
         );
         
         // Map recommended module titles back to their ObjectIds, maintaining the order returned by the LLM
@@ -205,7 +324,7 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
         const skippedModules: any[] = [];
 
         const moduleMap = new Map<string, any>();
-        modules.forEach(m => {
+        courseModules.forEach(m => {
           moduleMap.set(m.title.toLowerCase().trim(), m);
         });
 
@@ -219,7 +338,7 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
           }
         });
 
-        modules.forEach(m => {
+        courseModules.forEach(m => {
           const key = m.title.toLowerCase().trim();
           if (!recommendedTitlesSet.has(key)) {
             skippedModules.push(m._id);

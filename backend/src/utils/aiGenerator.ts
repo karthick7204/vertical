@@ -12,6 +12,8 @@ interface Question {
   correctAnswer: number;
   explanation: string;
   skillTags: string[];
+  moduleTitle?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export const generateAIAssessment = async (context: CourseContext): Promise<Question[]> => {
@@ -35,26 +37,61 @@ export const generateAIAssessment = async (context: CourseContext): Promise<Ques
       }).join("\n\n");
 
       const prompt = `
-        You are an expert curriculum designer. Generate a high-fidelity assessment for a course titled "${context.title}".
-        Course Description: ${context.description}
-        
-        MODULES AND SKILLS:
-        ${modulesDescription}
+You are an expert curriculum designer and technical assessment creator.
 
-        REQUIREMENTS:
-        1. For EACH module listed above, generate EXACTLY 3 multiple-choice questions (Total: ${context.modules.length * 3} questions).
-        2. Each question must have 4 options.
-        3. For each question, include "skillTags" that match the skills covered in its respective module.
-        4. Focus on technical accuracy and practical application.
-        5. Return the result ONLY as a valid JSON array of objects with this structure:
-           {
-             "question": "string",
-             "options": ["string", "string", "string", "string"],
-             "correctAnswer": number (0-3 index),
-             "explanation": "string (explain why the answer is correct)",
-             "skillTags": ["string"]
-           }
-      `;
+Generate a high-quality assessment for the course:
+"${context.title}"
+
+Course Description:
+${context.description}
+
+MODULES:
+${modulesDescription}
+
+REQUIREMENTS:
+
+1. Generate EXACTLY 3 UNIQUE multiple-choice questions for EACH module.
+2. Do NOT skip any module.
+3. Each question must contain EXACTLY 4 options.
+4. Include practical and conceptual questions.
+5. Mix difficulty levels:
+   - easy
+   - medium
+   - hard
+6. Questions should evaluate:
+   - understanding
+   - application
+   - problem-solving
+7. Each question MUST belong to the correct module.
+8. Include relevant skill tags based on module skills.
+
+Return ONLY raw valid JSON array.
+
+JSON structure:
+
+[
+  {
+    "question": "string",
+    "options": [
+      "string",
+      "string",
+      "string",
+      "string"
+    ],
+    "correctAnswer": 0,
+    "explanation": "string",
+    "skillTags": ["string"],
+    "moduleTitle": "string",
+    "difficulty": "easy | medium | hard"
+  }
+]
+
+IMPORTANT:
+- Do not include markdown
+- Do not wrap in \`\`\`
+- Do not include additional text
+- Output must be directly parseable JSON
+`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -72,16 +109,25 @@ export const generateAIAssessment = async (context: CourseContext): Promise<Ques
   return fallbackGeneration(context);
 };
 
+interface PerformanceMetrics {
+  scorePercentage: number;
+  totalCorrect: number;
+  totalIncorrect: number;
+  strongTopics: string[];
+  weakTopics: string[];
+  moduleAccuracy: Record<string, number>;
+}
+
 export const generatePersonalizedPath = async (
   courseTitle: string,
   modules: any[],
-  performance: { strengths: string[]; weaknesses: string[] }
+  performance: PerformanceMetrics
 ): Promise<{ path: string[]; suggestions: string }> => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    console.warn("[AI] No Gemini API Key found for path generation. Returning all modules.");
-    return { path: modules.map(m => m.title), suggestions: "Focus on completing all modules to build a solid foundation." };
+    console.warn("[AI] No Gemini API Key found for path generation. Falling back to rule-based programmatic generation.");
+    return localFallbackPathGeneration(modules, performance);
   }
 
   const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
@@ -99,25 +145,29 @@ export const generatePersonalizedPath = async (
       }).join("\n\n");
 
       const prompt = `
-        You are an elite AI learning strategist. Your task is to analyze the learner's existing knowledge based on their assessment performance, cross-reference it with the available course modules for "${courseTitle}", and generate an optimized, personalized structured learning path.
+        You are an elite AI learning strategist. Your task is to analyze the learner's existing knowledge based on their detailed assessment performance, cross-reference it with the available course modules for "${courseTitle}", and generate an optimized, personalized structured learning path.
 
         AVAILABLE COURSE MODULES:
         ${modulesDescription}
 
-        LEARNER ASSESSMENT RESULTS:
-        - Mastered Skills (Strengths): ${performance.strengths.join(", ") || "None identified"}
-        - Areas for Improvement (Weaknesses): ${performance.weaknesses.join(", ") || "None identified"}
+        LEARNER DETAILED ASSESSMENT PERFORMANCE:
+        - Overall Score: ${performance.scorePercentage}% (${performance.totalCorrect} Correct, ${performance.totalIncorrect} Incorrect)
+        - Accuracy per Module/Topic:
+          ${Object.entries(performance.moduleAccuracy).map(([topic, acc]) => `  * ${topic}: ${acc}%`).join("\n")}
+        - Mastered Topics (Strong): ${performance.strongTopics.join(", ") || "None"}
+        - Areas for Improvement (Weak): ${performance.weakTopics.join(", ") || "None"}
 
-        INSTRUCTIONS:
-        1. Analyze the learner's existing knowledge based on the assessment performance.
-        2. Generate a personalized structured learning path containing ONLY the modules the learner actually needs to study.
-        3. EXCLUDE modules that cover concepts the learner has already mastered (where all or most of the module's skills are in the Mastered Skills list).
-        4. INCLUDE modules where the learner has shown weaknesses or where skills are not yet mastered.
-        5. Return the recommended module names in a clear, ordered, and structured format representing the optimized learning journey.
-        6. Provide 2-3 specific "Focus Suggestions" for their learning journey based on their profile.
-        7. Return the result ONLY as a valid JSON object matching this structure:
+        CRITICAL CONSTRAINTS & LOGIC:
+        1. Do NOT generate or create any new modules.
+        2. Analyze the learner's module accuracy and performance.
+        3. Exclude modules that the learner has mastered (i.e. those listed under Mastered Topics or where the learner answered questions with high accuracy, typically >= 70%).
+        4. Include modules where the learner performed poorly (accuracy < 70% or listed under Areas for Improvement).
+        5. The returned path must contain ONLY a subset of the existing module titles. Do NOT include any modules that do not match the titles of the available course modules.
+        6. Return the recommended module names in a clear, ordered, and structured sequence representing the optimized learning journey.
+        7. Provide 2-3 specific "Focus Suggestions" for their learning journey based on their profile.
+        8. Return the result ONLY as a valid JSON object matching this structure:
         {
-          "path": ["Module Title 1", "Module Title 2"],
+          "path": ["Exact Module Title A", "Exact Module Title B"],
           "suggestions": "Your personalized focus advice here..."
         }
       `;
@@ -139,8 +189,34 @@ export const generatePersonalizedPath = async (
     }
   }
 
-  console.error("[AI] All path models failed. Using defaults.");
-  return { path: modules.map(m => m.title), suggestions: "Maintain your learning momentum." };
+  console.error("[AI] All path models failed. Using rule-based fallback.");
+  return localFallbackPathGeneration(modules, performance);
+};
+
+const localFallbackPathGeneration = (
+  modules: any[],
+  performance: PerformanceMetrics
+): { path: string[]; suggestions: string } => {
+  const path: string[] = [];
+  modules.forEach(m => {
+    const title = m.title;
+    const accuracy = performance.moduleAccuracy[title];
+    
+    // If accuracy is >= 70% (performs well), exclude it (mastered).
+    // If accuracy < 70% or the module was not tested, include it.
+    if (accuracy !== undefined) {
+      if (accuracy < 70) {
+        path.push(title);
+      }
+    } else {
+      path.push(title);
+    }
+  });
+
+  return {
+    path,
+    suggestions: `Focus on modules where your score was below 70%: ${performance.weakTopics.join(', ') || 'none'}.`
+  };
 };
 
 const fallbackGeneration = (context: CourseContext): Question[] => {
@@ -164,7 +240,9 @@ const fallbackGeneration = (context: CourseContext): Question[] => {
         ],
         correctAnswer: Math.floor(Math.random() * 4),
         explanation: `The standard pattern for ${moduleName} ensures baseline compatibility and scalability.`,
-        skillTags: skills
+        skillTags: skills,
+        moduleTitle: moduleName,
+        difficulty: i === 0 ? 'easy' : i === 1 ? 'medium' : 'hard'
       });
     }
   });

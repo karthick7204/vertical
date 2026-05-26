@@ -10,6 +10,8 @@ export interface IAssessment extends Document {
     correctAnswer: number;
     explanation: string;
     skillTags: string[];
+    moduleTitle?: string;
+    difficulty?: string;
   }[];
 }
 
@@ -22,7 +24,9 @@ const AssessmentSchema: Schema = new Schema({
     options: [String],
     correctAnswer: Number,
     explanation: String,
-    skillTags: [String]
+    skillTags: [String],
+    moduleTitle: String,
+    difficulty: String
   }]
 });
 

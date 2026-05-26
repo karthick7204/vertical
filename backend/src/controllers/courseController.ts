@@ -7,6 +7,7 @@ import { type AuthRequest } from '../middleware/authMiddleware.js';
 import ProgressTracking from '../models/ProgressTracking.js';
 import Enrollment from '../models/Enrollment.js';
 import PersonalizedPath from '../models/PersonalizedPath.js';
+import { broadcastProgressUpdate } from './enrollmentController.js';
 
 // @desc    Create a new course
 // @route   POST /api/courses
@@ -142,10 +143,27 @@ export const deleteCourse = async (req: Request, res: Response) => {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
-    await Module.deleteMany({ courseId: course._id });
+    const courseId = course._id;
+
+    // Delete associated assessments
+    await Assessment.deleteMany({ courseId });
+
+    // Delete associated progress trackings
+    await ProgressTracking.deleteMany({ courseId });
+
+    // Delete associated personalized paths
+    await PersonalizedPath.deleteMany({ courseId });
+
+    // Delete associated enrollments
+    await Enrollment.deleteMany({ courseId });
+
+    // Delete course modules
+    await Module.deleteMany({ courseId });
+    
+    // Finally delete the course
     await course.deleteOne();
 
-    res.json({ message: 'Course and associated modules deleted' });
+    res.json({ message: 'Course and all associated records deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -190,22 +208,63 @@ export const updateModuleProgress = async (req: AuthRequest, res: Response) => {
       PersonalizedPath.findOne({ userId, courseId } as any)
     ]);
 
-    if (enrollment && pathDoc && pathDoc.recommendedOrder.length > 0) {
-      const allProgress = await ProgressTracking.find({ 
-        userId, 
-        courseId, 
-        moduleId: { $in: pathDoc.recommendedOrder } 
-      } as any);
+    if (enrollment) {
+      let overallProgress = 0;
+      if (pathDoc && pathDoc.recommendedOrder.length > 0) {
+        const allProgress = await ProgressTracking.find({ 
+          userId, 
+          courseId, 
+          moduleId: { $in: pathDoc.recommendedOrder } 
+        } as any);
 
-      const totalPathModules = pathDoc.recommendedOrder.length;
-      let sum = 0;
-      allProgress.forEach(p => {
-        sum += p.completionPercentage || 0;
-      });
-      const overallProgress = Math.round(sum / totalPathModules);
-      
+        const totalPathModules = pathDoc.recommendedOrder.length;
+        let sum = 0;
+        allProgress.forEach(p => {
+          sum += p.completionPercentage || 0;
+        });
+        overallProgress = Math.round(sum / totalPathModules);
+      } else {
+        // Fallback: use all modules in the course
+        const allModules = await Module.find({ courseId });
+        const totalModules = allModules.length;
+        if (totalModules > 0) {
+          const moduleIds = allModules.map(m => m._id);
+          const allProgress = await ProgressTracking.find({
+            userId,
+            courseId,
+            moduleId: { $in: moduleIds }
+          } as any);
+          let sum = 0;
+          allProgress.forEach(p => {
+            sum += p.completionPercentage || 0;
+          });
+          overallProgress = Math.round(sum / totalModules);
+        }
+      }
+
       enrollment.progress = Math.min(100, Math.max(0, overallProgress));
+      
+      // Update enrollment status based on progress
+      if (enrollment.progress === 100) {
+        enrollment.status = 'completed';
+        enrollment.completedAt = new Date();
+      } else if (enrollment.progress > 0) {
+        enrollment.status = 'in-progress';
+      }
+      
       await enrollment.save();
+
+      // Broadcast progress update in real-time
+      broadcastProgressUpdate({
+        type: 'PROGRESS_UPDATE',
+        userId: userId.toString(),
+        courseId: courseId.toString(),
+        progress: enrollment.progress,
+        status: enrollment.status,
+        score: enrollment.score,
+        totalQuestions: enrollment.totalQuestions,
+        completedAt: enrollment.completedAt
+      });
     }
 
     res.json({ progress });

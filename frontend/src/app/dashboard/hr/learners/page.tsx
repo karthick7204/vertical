@@ -72,6 +72,96 @@ export default function LearnersProgressPage() {
       }
     };
     fetchReport();
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('verticle_token') : null;
+    let eventSource: EventSource | null = null;
+
+    if (token) {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      eventSource = new EventSource(`${API_BASE}/enrollments/progress-stream?token=${token}`);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const update = JSON.parse(event.data);
+          
+          if (update.type === 'PROGRESS_UPDATE') {
+            setLearnersData((prevData) => {
+              return prevData.map((learner) => {
+                if (learner._id === update.userId) {
+                  const updatedEnrollments = learner.enrollments.map((enrollment) => {
+                    const match = enrollment.courseId === update.courseId || 
+                                  (enrollment.courseId as any)?._id === update.courseId;
+                    if (match) {
+                      return {
+                        ...enrollment,
+                        progress: update.progress,
+                        status: update.status,
+                        score: update.score,
+                        totalQuestions: update.totalQuestions,
+                        completedAt: update.completedAt
+                      };
+                    }
+                    return enrollment;
+                  });
+                  return {
+                    ...learner,
+                    enrollments: updatedEnrollments
+                  };
+                }
+                return learner;
+              });
+            });
+          } else if (update.type === 'ENROLLMENT_CREATED') {
+            setLearnersData((prevData) => {
+              return prevData.map((learner) => {
+                if (learner._id === update.userId) {
+                  const exists = learner.enrollments.some(e => e.enrollmentId === update.enrollment._id);
+                  if (exists) return learner;
+
+                  const newEnrollment: CourseEnrollment = {
+                    enrollmentId: update.enrollment._id,
+                    courseId: update.enrollment.courseId?._id || update.enrollment.courseId,
+                    courseTitle: update.enrollment.courseId?.title || 'Unknown Course',
+                    courseCategory: update.enrollment.courseId?.category || 'General',
+                    status: update.enrollment.status,
+                    progress: update.enrollment.progress,
+                    score: update.enrollment.score,
+                    totalQuestions: update.enrollment.totalQuestions,
+                    enrolledAt: update.enrollment.enrolledAt,
+                    completedAt: update.enrollment.completedAt
+                  };
+                  return {
+                    ...learner,
+                    enrollments: [newEnrollment, ...learner.enrollments]
+                  };
+                }
+                return learner;
+              });
+            });
+          } else if (update.type === 'ENROLLMENT_CANCELLED') {
+            setLearnersData((prevData) => {
+              return prevData.map((learner) => {
+                if (learner._id === update.userId) {
+                  return {
+                    ...learner,
+                    enrollments: learner.enrollments.filter(e => e.enrollmentId !== update.enrollmentId)
+                  };
+                }
+                return learner;
+              });
+            });
+          }
+        } catch (err) {
+          console.error('Error handling SSE progress update in HR console:', err);
+        }
+      };
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
   }, []);
 
   // Compute stats

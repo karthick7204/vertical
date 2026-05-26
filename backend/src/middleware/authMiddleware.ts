@@ -10,11 +10,15 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.query && req.query.token) {
+    token = req.query.token as string;
+  }
+
+  if (token) {
     try {
-      token = req.headers.authorization.split(' ')[1];
-      
       const secret = process.env.JWT_ACCESS_SECRET;
-      if (!token || !secret) {
+      if (!secret) {
         return res.status(401).json({ message: 'Not authorized, token or secret missing' });
       }
 
@@ -23,12 +27,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       next();
     } catch (error) {
       console.error('JWT Verification Error:', error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
-  }
-
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
+  } else {
+    return res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
 

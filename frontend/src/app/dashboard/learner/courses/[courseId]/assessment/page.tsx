@@ -30,6 +30,7 @@ export default function AssessmentPage() {
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [correctQuestionIndices, setCorrectQuestionIndices] = useState<number[]>([]);
+  const [userAnswers, setUserAnswers] = useState<{ questionIndex: number; chosenOption: number; isCorrect: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
   const [personalizedPathData, setPersonalizedPathData] = useState<any>(null);
@@ -58,7 +59,7 @@ export default function AssessmentPage() {
         setAssessment(data);
 
         const activeEnrollment = myEnrollments.find(e => (e.courseId?._id || e.courseId) === courseId);
-        if (activeEnrollment && activeEnrollment.status === 'completed') {
+        if (activeEnrollment && activeEnrollment.score !== undefined && activeEnrollment.score !== null) {
           setScore(activeEnrollment.score || 0);
           setIsFinished(true);
           try {
@@ -85,11 +86,18 @@ export default function AssessmentPage() {
   const handleSubmitAnswer = () => {
     if (selectedOption === null || isAnswered) return;
     
+    const isCorrect = selectedOption === assessment?.questions[currentQuestionIndex].correctAnswer;
     setIsAnswered(true);
-    if (selectedOption === assessment?.questions[currentQuestionIndex].correctAnswer) {
+    if (isCorrect) {
       setScore(prev => prev + 1);
       setCorrectQuestionIndices(prev => [...prev, currentQuestionIndex]);
     }
+    
+    setUserAnswers(prev => [...prev, {
+      questionIndex: currentQuestionIndex,
+      chosenOption: selectedOption,
+      isCorrect
+    }]);
   };
 
   const handleNextQuestion = async () => {
@@ -103,7 +111,7 @@ export default function AssessmentPage() {
       setIsFinished(true);
       // Submit score to backend
       try {
-        await assessmentService.submitScore(courseId, score, assessment.questions.length, correctQuestionIndices);
+        await assessmentService.submitScore(courseId, score, assessment.questions.length, correctQuestionIndices, userAnswers);
       } catch (error) {
         console.error('Failed to submit score:', error);
       }

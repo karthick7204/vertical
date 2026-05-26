@@ -53,7 +53,58 @@ export default function LearnerDashboard() {
     };
 
     fetchData();
-  }, []);
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('verticle_token') : null;
+    let eventSource: EventSource | null = null;
+
+    if (token) {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      eventSource = new EventSource(`${API_BASE}/enrollments/progress-stream?token=${token}`);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const update = JSON.parse(event.data);
+          
+          if (update.userId === user?.id) {
+            if (update.type === 'PROGRESS_UPDATE') {
+              setMyEnrollments((prevEnrollments) => {
+                return prevEnrollments.map((e) => {
+                  if (e.courseId._id === update.courseId) {
+                    return {
+                      ...e,
+                      progress: update.progress,
+                      status: update.status,
+                      score: update.score,
+                      totalQuestions: update.totalQuestions
+                    };
+                  }
+                  return e;
+                });
+              });
+            } else if (update.type === 'ENROLLMENT_CREATED') {
+              setMyEnrollments((prev) => {
+                const exists = prev.some(e => e._id === update.enrollment._id);
+                if (exists) return prev;
+                return [update.enrollment, ...prev];
+              });
+              setAvailableCourses((prev) => prev.filter(c => c._id !== update.enrollment.courseId._id));
+            } else if (update.type === 'ENROLLMENT_CANCELLED') {
+              setMyEnrollments((prev) => prev.filter(e => e._id !== update.enrollmentId));
+              fetchData();
+            }
+          }
+        } catch (err) {
+          console.error('Error parsing SSE in learner page:', err);
+        }
+      };
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [user?.id]);
 
   const [selectedCourseForEnroll, setSelectedCourseForEnroll] = useState<any | null>(null);
   const [showAssessmentPrompt, setShowAssessmentPrompt] = useState(false);
@@ -310,6 +361,12 @@ export default function LearnerDashboard() {
                         <p className="text-xs font-bold text-zinc-600 line-clamp-2">
                           {enrollment.courseId.description}
                         </p>
+                        {enrollment.score !== undefined && enrollment.score !== null && (
+                          <div className="flex items-center gap-1.5 bg-brand-primary text-black px-3 py-1 text-[9px] font-black uppercase italic w-fit mt-3 border border-black shadow-[2px_2px_0px_0px_#000000]">
+                            <Award className="w-3.5 h-3.5" />
+                            Assessed: {Math.round((enrollment.score / enrollment.totalQuestions!) * 100)}%
+                          </div>
+                        )}
                       </div>
                       
                       <div className="p-6 bg-zinc-50 flex items-center justify-between">
@@ -338,11 +395,11 @@ export default function LearnerDashboard() {
                             <Trash2 className="w-4 h-4 text-red-600" />
                           </button>
 
-                          {enrollment.status === 'completed' ? (
+                           {enrollment.status === 'completed' ? (
                             <div className="flex flex-col items-end gap-2">
                               <div className="flex items-center gap-2 bg-green-500 text-black px-3 py-1 text-[10px] font-black uppercase italic">
                                 <Award className="w-3 h-3" />
-                                PASSED: {Math.round((enrollment.score! / enrollment.totalQuestions!) * 100)}%
+                                COURSE PASSED: {Math.round((enrollment.score! / enrollment.totalQuestions!) * 100)}%
                               </div>
                               <Link 
                                 href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
@@ -352,14 +409,24 @@ export default function LearnerDashboard() {
                                 Review Results
                               </Link>
                             </div>
-                          ) : (
+                          ) : enrollment.progress > 0 ? (
                             <Link 
-                              href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
+                              href={`/dashboard/learner/courses/${enrollment.courseId._id}`}
                               onClick={(e) => e.stopPropagation()}
                               className="bg-black text-white px-6 py-3 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
                             >
-                              Launch
+                              Resume
                             </Link>
+                          ) : (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewPersonalizedPath(enrollment.courseId);
+                              }}
+                              className="bg-black text-white px-6 py-3 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                            >
+                              Launch
+                            </button>
                           )}
                         </div>
                       </div>
@@ -681,12 +748,12 @@ export default function LearnerDashboard() {
                       <Zap className="w-12 h-12 text-zinc-300 mb-4 animate-bounce" />
                       <h5 className="font-black uppercase italic text-zinc-400">No active pathway detected</h5>
                       <p className="text-xs font-bold text-zinc-400 mt-2 uppercase tracking-widest leading-relaxed">
-                        You must launch and complete the initial assessment layer for this course to construct an optimized learning path.
+                        You can take the initial assessment layer to customize your learning path, or start with the default curriculum order.
                       </p>
                     </div>
                     <div className="pt-6 border-t-2 border-black">
                       <p className="text-xs font-black uppercase tracking-wider text-black mb-4">
-                        Would you like to start the assessment now?
+                        Select your launching vector:
                       </p>
                       <div className="flex flex-col sm:flex-row gap-3">
                         <button
@@ -699,6 +766,17 @@ export default function LearnerDashboard() {
                         >
                           Start Assessment
                           <ArrowRight className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedCourseForPath(null);
+                            setPersonalizedPathData(null);
+                            router.push(`/dashboard/learner/courses/${selectedCourseForPath._id}`);
+                          }}
+                          className="flex-1 bg-black text-white border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                        >
+                          Start Course (Default)
+                          <ArrowRight className="w-4 h-4 text-brand-primary" />
                         </button>
                         <button
                           onClick={() => {
