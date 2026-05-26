@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Sparkles, Mail, Lock, ArrowRight, Terminal, Loader2 } from 'lucide-react';
@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { login } = useAuth();
@@ -149,5 +149,17 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-brand-primary animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

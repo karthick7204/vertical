@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Sparkles, Lock, ArrowRight, Loader2, CheckCircle2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
-export default function OnboardingInitializePage() {
+function OnboardingInitializeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
@@ -163,5 +163,17 @@ export default function OnboardingInitializePage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function OnboardingInitializePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-brand-primary animate-spin" />
+      </div>
+    }>
+      <OnboardingInitializeContent />
+    </Suspense>
   );
 }
