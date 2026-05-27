@@ -7,6 +7,7 @@ import LearnerScore from '../models/LearnerScore.js';
 import Module from '../models/Module.js';
 import PersonalizedPath from '../models/PersonalizedPath.js';
 import ProgressTracking from '../models/ProgressTracking.js';
+import EmailJob from '../models/EmailJob.js';
 import { generatePersonalizedPath } from '../utils/aiGenerator.js';
 import { type AuthRequest } from '../middleware/authMiddleware.js';
 import { broadcastProgressUpdate } from './enrollmentController.js';
@@ -381,6 +382,15 @@ export const submitScore = async (req: AuthRequest, res: Response) => {
         user.personalizedPath = result.path;
         user.focusSuggestions = result.suggestions;
         await user.save();
+
+        // Schedule email job to send personalized roadmap
+        await EmailJob.create({
+          userId: req.user._id,
+          courseId,
+          status: 'PENDING',
+          scheduledAt: new Date(Date.now() + 5000), // process in 5 seconds
+        });
+        console.log(`[Assessment] Scheduled email notification job for user ${req.user._id} and course ${courseId}`);
       } catch (pathError) {
         console.error("[AI] Failed to generate personalized path:", pathError);
       }

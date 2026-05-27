@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
 import enrollmentRoutes from './routes/enrollmentRoutes.js';
+import './utils/cronScheduler.js';
 
 dotenv.config();
 
