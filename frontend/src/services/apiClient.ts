@@ -1,3 +1,16 @@
+export class ApiError extends Error {
+  status: number;
+  data: unknown;
+
+  constructor(message: string, status: number, data: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
@@ -20,7 +33,7 @@ class ApiClient {
 
     const response = await fetch(`${BASE_URL}${endpoint}`, config);
     
-    let data;
+    let data: { message?: string } & Record<string, unknown>;
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       data = await response.json();
@@ -35,10 +48,11 @@ class ApiClient {
         window.dispatchEvent(new CustomEvent('session-expired'));
       }
 
-      const error = new Error(data.message || `API request failed with status ${response.status}`);
-      (error as any).status = response.status;
-      (error as any).data = data;
-      throw error;
+      throw new ApiError(
+        data.message || `API request failed with status ${response.status}`,
+        response.status,
+        data
+      );
     }
 
     return data;
@@ -48,7 +62,7 @@ class ApiClient {
     return this.request(endpoint, { ...options, method: 'GET' });
   }
 
-  async post(endpoint: string, body: any, options?: RequestInit) {
+  async post(endpoint: string, body: unknown, options?: RequestInit) {
     return this.request(endpoint, {
       ...options,
       method: 'POST',
@@ -56,7 +70,7 @@ class ApiClient {
     });
   }
 
-  async put(endpoint: string, body: any, options?: RequestInit) {
+  async put(endpoint: string, body: unknown, options?: RequestInit) {
     return this.request(endpoint, {
       ...options,
       method: 'PUT',

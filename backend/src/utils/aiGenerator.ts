@@ -24,7 +24,14 @@ export const generateAIAssessment = async (context: CourseContext): Promise<Ques
     return fallbackGeneration(context);
   }
 
-  const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+  const modelsToTry = [
+    "gemini-3.5-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-flash-latest",
+    "gemini-pro-latest"
+  ];
   const genAI = new GoogleGenerativeAI(apiKey);
 
   for (const modelName of modelsToTry) {
@@ -130,7 +137,14 @@ export const generatePersonalizedPath = async (
     return localFallbackPathGeneration(modules, performance);
   }
 
-  const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+  const modelsToTry = [
+    "gemini-3.5-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-flash-latest",
+    "gemini-pro-latest"
+  ];
   const genAI = new GoogleGenerativeAI(apiKey);
 
   for (const modelName of modelsToTry) {
@@ -230,16 +244,48 @@ const fallbackGeneration = (context: CourseContext): Question[] => {
       const subMod = mod.subModules && mod.subModules.length > 0 ? mod.subModules[i % mod.subModules.length] : null;
       const questionContext = subMod ? `${moduleName} (${subMod.title})` : moduleName;
 
+      let questionText = "";
+      let options: string[] = [];
+      let explanation = "";
+      let correctAnswer = 0;
+
+      if (i === 0) {
+        questionText = `[Module: ${questionContext}] Which of the following best describes the primary purpose of ${questionContext}? (Simulated Q${i+1})`;
+        options = [
+          `To facilitate efficient data flow and baseline operations within ${moduleName}`,
+          `To completely bypass standard validation protocols and security controls`,
+          `To deprecate legacy implementations without performing integration tests`,
+          `To run background tasks on a single thread without concurrency management`
+        ];
+        correctAnswer = 0;
+        explanation = `Understanding the primary purpose of ${moduleName} is fundamental to working with its concepts.`;
+      } else if (i === 1) {
+        questionText = `[Module: ${questionContext}] When implementing ${questionContext}, which standard best practice should be followed to optimize efficiency? (Simulated Q${i+1})`;
+        options = [
+          `Hardcode configuration variables to prevent runtime dynamic resolution overhead`,
+          `Utilize cache delegation and modular design principles specific to ${moduleName}`,
+          `Disable all logging, telemetry, and error reporting systems to save cycles`,
+          `Avoid using structured modules or reusable helper functions to reduce call stack depth`
+        ];
+        correctAnswer = 1;
+        explanation = `Modular design and cache delegation are standard best practices for optimizing ${moduleName}.`;
+      } else {
+        questionText = `[Module: ${questionContext}] Which architectural pattern is most suitable for scaling ${questionContext} under heavy concurrent write loads? (Simulated Q${i+1})`;
+        options = [
+          `Monolithic single-node execution with blocking network I/O`,
+          `Client-side synchronous pooling without rate limiting or backpressure`,
+          `Temporary in-memory storage without disk persistence layers`,
+          `Distributed event sourcing with optimistic locking tailored for ${moduleName}`
+        ];
+        correctAnswer = 3;
+        explanation = `For high concurrency and write-heavy workloads in ${moduleName}, distributed event sourcing with optimistic locking provides robust scaling.`;
+      }
+
       questions.push({
-        question: `[Module: ${questionContext}] Which approach is most effective for long-term scalability in this context? (Simulated Q${i+1})`,
-        options: [
-          `Standard ${moduleName} pattern`,
-          `Optimized ${moduleName} architecture`,
-          `Distributed ${moduleName} nodes`,
-          `Edge-cached ${moduleName}`
-        ],
-        correctAnswer: Math.floor(Math.random() * 4),
-        explanation: `The standard pattern for ${moduleName} ensures baseline compatibility and scalability.`,
+        question: questionText,
+        options: options,
+        correctAnswer: correctAnswer,
+        explanation: explanation,
         skillTags: skills,
         moduleTitle: moduleName,
         difficulty: i === 0 ? 'easy' : i === 1 ? 'medium' : 'hard'
