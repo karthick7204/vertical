@@ -35,7 +35,6 @@ function OnboardingInitializeContent() {
     // Simulation of account activation API call
     setTimeout(() => {
       setStatus('success');
-      // After success, redirect to login after 3 seconds
       setTimeout(() => {
         router.push('/login');
       }, 3000);
@@ -43,116 +42,116 @@ function OnboardingInitializeContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-black flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center">
-        <div className="inline-flex items-center gap-3 mb-12">
-          <div className="w-10 h-10 border-2 border-black bg-brand-primary flex items-center justify-center">
-            <Sparkles className="text-black w-6 h-6 fill-current" />
+        <div className="inline-flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-xs">
+            <Sparkles className="w-5 h-5 fill-current" />
           </div>
-          <span className="text-2xl font-display font-black tracking-tighter text-black uppercase">Verticle</span>
+          <span className="text-xl font-display font-extrabold tracking-tight text-slate-900">VERTICLE</span>
         </div>
-        <h2 className="text-5xl font-display font-black text-black tracking-tighter uppercase leading-none">Initialize<br/>Access</h2>
-        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Secure Account Activation Protocol</p>
+        <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tight">Set Your Password</h2>
+        <p className="mt-2 text-sm text-slate-500">Secure Account Activation Protocol</p>
       </div>
 
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-12 sm:mx-auto sm:w-full sm:max-w-md relative z-10"
+        className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4 sm:px-0"
       >
-        <div className="bg-white p-10 border-4 border-black shadow-[12px_12px_0px_0px_#000000]">
+        <div className="bg-white p-8 sm:p-10 rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-200/50">
           {status === 'success' ? (
-            <div className="text-center py-8">
-              <div className="w-20 h-20 bg-green-100 border-4 border-green-600 flex items-center justify-center mx-auto mb-8">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+            <div className="text-center py-6">
+              <div className="w-16 h-16 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-xs">
+                <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-black uppercase italic mb-4">Activation Complete</h3>
-              <p className="text-sm font-bold text-zinc-500 mb-8">Your secure access key has been established. Redirecting to login console...</p>
-              <div className="w-full h-2 bg-zinc-100 border-2 border-black">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Activation Complete</h3>
+              <p className="text-sm text-slate-500 mb-8 font-normal">Your secure password has been set. Redirecting to login...</p>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 3 }}
-                  className="h-full bg-brand-primary"
+                  className="h-full bg-indigo-600 rounded-full"
                 />
               </div>
             </div>
           ) : status === 'error' ? (
-            <div className="text-center py-8">
-              <div className="w-20 h-20 bg-red-100 border-4 border-red-600 flex items-center justify-center mx-auto mb-8">
-                <ShieldAlert className="w-10 h-10 text-red-600" />
+            <div className="text-center py-6">
+              <div className="w-16 h-16 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-center mx-auto mb-6 text-rose-600 shadow-xs">
+                <ShieldAlert className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-black uppercase italic mb-4">Access Denied</h3>
-              <p className="text-sm font-bold text-zinc-500 mb-8">{errorMessage}</p>
-              <Link href="/" className="btn-yellow block py-4 text-xs font-black uppercase tracking-widest text-center">
-                Return to Landing
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Access Denied</h3>
+              <p className="text-sm text-slate-500 mb-8 font-normal">{errorMessage}</p>
+              <Link href="/" className="btn-yellow block py-3 text-sm font-semibold text-center rounded-xl">
+                Return to Home
               </Link>
             </div>
           ) : (
             <>
-              <div className="mb-10 p-6 bg-zinc-100 border-2 border-black">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-black mb-2">Final Step</p>
-                <p className="text-xs text-black leading-relaxed font-bold">
-                  To complete your organization joining process, please establish a secure master password.
+              <div className="mb-6 p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+                <p className="text-xs font-semibold text-indigo-950 mb-1">Final Step</p>
+                <p className="text-xs text-indigo-800 leading-relaxed font-normal">
+                  To complete your organization onboarding, please establish a secure password for your account.
                 </p>
               </div>
 
               {errorMessage && (
-                <div className="mb-6 p-4 bg-red-100 border-2 border-red-600 text-red-600 font-black text-xs uppercase tracking-widest">
+                <div className="mb-6 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 font-medium text-xs rounded-xl">
                   {errorMessage}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-8">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-[0.3em] text-black mb-4">
-                    New Master Key
+                  <label className="block text-xs font-semibold text-slate-700 mb-2">
+                    New Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full px-4 py-4 pl-12 bg-white border-2 border-black rounded-none text-black placeholder-zinc-400 focus:outline-none focus:bg-brand-primary/10 transition-all text-sm font-bold uppercase tracking-widest"
+                      className="block w-full px-4 py-3 pl-11 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm font-medium"
                       placeholder="••••••••"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-[0.3em] text-black mb-4">
-                    Confirm Master Key
+                  <label className="block text-xs font-semibold text-slate-700 mb-2">
+                    Confirm Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="password"
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="block w-full px-4 py-4 pl-12 bg-white border-2 border-black rounded-none text-black placeholder-zinc-400 focus:outline-none focus:bg-brand-primary/10 transition-all text-sm font-bold uppercase tracking-widest"
+                      className="block w-full px-4 py-3 pl-11 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm font-medium"
                       placeholder="••••••••"
                     />
                   </div>
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-2">
                   <button
                     type="submit"
                     disabled={status === 'submitting'}
-                    className="btn-yellow w-full py-6 flex justify-center items-center gap-4 active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50"
+                    className="btn-yellow w-full py-3.5 rounded-xl font-semibold text-sm shadow-xs flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {status === 'submitting' ? (
                       <>
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                        ESTABLISHING ACCESS...
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Saving Password...
                       </>
                     ) : (
                       <>
-                        FINALIZE INITIALIZATION
-                        <ArrowRight className="w-6 h-6" />
+                        Complete Activation
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -169,8 +168,8 @@ function OnboardingInitializeContent() {
 export default function OnboardingInitializePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-brand-primary animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
       </div>
     }>
       <OnboardingInitializeContent />

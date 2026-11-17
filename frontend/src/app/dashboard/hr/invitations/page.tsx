@@ -11,22 +11,25 @@ import {
   Settings, 
   LogOut, 
   Send, 
-  UserPlus,
-  Shield,
-  Loader2,
+  Shield, 
+  UserPlus, 
+  ArrowRight,
   CheckCircle2,
-  ArrowRight
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { authService } from '@/services/authService';
+import { apiClient } from '@/services/apiClient';
 
 export default function HRInvitationsPage() {
-  const { logout, user } = useAuth();
+  const { user, logout } = useAuth();
+
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
   const [role, setRole] = useState('LEARNER');
+  const [password, setPassword] = useState('');
+  
   const [isSending, setIsSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
@@ -35,26 +38,22 @@ export default function HRInvitationsPage() {
     e.preventDefault();
     setIsSending(true);
     setError('');
-    
+
     try {
-      await authService.invite({
+      await apiClient.post('/hr/invite', {
         name,
         email: email.trim().toLowerCase(),
-        password,
         role,
-        organizationId: user?.organizationId
+        password
       });
-      
+
       setSent(true);
-      setEmail('');
       setName('');
+      setEmail('');
       setPassword('');
-      
-      // Reset success state after 5 seconds
-      setTimeout(() => setSent(false), 5000);
+      setTimeout(() => setSent(false), 4000);
     } catch (err: any) {
-      console.error('Failed to provision user:', err);
-      setError(err.message || 'Transmission failure during provisioning.');
+      setError(err.response?.data?.message || err.message || 'Failed to dispatch invitation.');
     } finally {
       setIsSending(false);
     }
@@ -62,46 +61,52 @@ export default function HRInvitationsPage() {
 
   return (
     <ProtectedRoute allowedRoles={['HR_ADMIN', 'SUPER_ADMIN']}>
-      <div className="min-h-screen bg-zinc-50 flex text-black">
+      <div className="min-h-screen bg-slate-50/60 flex text-slate-900">
         {/* Sidebar */}
-        <aside className="w-64 border-r-4 border-black bg-white flex flex-col fixed h-full">
-          <div className="p-8 border-b-4 border-black">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 border-2 border-black bg-brand-primary" />
-              <span className="font-display font-black tracking-tighter text-xl">VERTICLE</span>
+        <aside className="w-64 border-r border-slate-200 bg-white flex flex-col fixed h-full z-20">
+          <div className="p-6 border-b border-slate-200 bg-white">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-xs">
+                <Sparkles className="w-5 h-5 fill-current" />
+              </div>
+              <span className="font-display font-bold tracking-tight text-xl text-slate-900">VERTICLE</span>
             </Link>
           </div>
 
-          <nav className="flex-1 p-6 space-y-4">
-            <Link href="/dashboard/hr" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+          <nav className="flex-1 p-4 space-y-1.5">
+            <Link href="/dashboard/hr" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <BarChart3 className="w-4 h-4" />
               Analytics
             </Link>
-            <Link href="/dashboard/hr/courses" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/courses" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Layers className="w-4 h-4" />
               Courses
             </Link>
-            <Link href="/dashboard/hr/learners" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/learners" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Users className="w-4 h-4" />
               Learners
             </Link>
-            <Link href="/dashboard/hr/invitations" className="w-full flex items-center gap-3 p-3 bg-brand-primary border-2 border-black font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000]">
+            <Link href="/dashboard/hr/create-course" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
+              <Plus className="w-4 h-4" />
+              Create Course
+            </Link>
+            <Link href="/dashboard/hr/invitations" className="w-full flex items-center gap-3 px-3.5 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl font-semibold text-xs shadow-xs transition-all">
               <Mail className="w-4 h-4" />
               Invitations
             </Link>
-            <button className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/settings" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Settings className="w-4 h-4" />
               Settings
-            </button>
+            </Link>
           </nav>
 
-          <div className="p-6 border-t-4 border-black">
+          <div className="p-4 border-t border-slate-200">
             <button 
               onClick={logout}
-              className="w-full flex items-center gap-3 p-3 hover:bg-black hover:text-brand-primary transition-all font-black uppercase text-xs tracking-widest"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-medium text-xs"
             >
               <LogOut className="w-4 h-4" />
-              Terminate Session
+              Sign Out
             </button>
           </div>
         </aside>
@@ -109,93 +114,95 @@ export default function HRInvitationsPage() {
         {/* Main Content */}
         <main className="flex-1 ml-64 overflow-y-auto">
           {/* Header */}
-          <header className="h-24 border-b-4 border-black bg-white flex items-center justify-between px-10 sticky top-0 z-10">
+          <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tight italic">Personnel Provisioning</h1>
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">ORG IDENTITY // {user?.organizationId || 'UNSET'}</p>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">Personnel Provisioning</h1>
+              <p className="text-xs text-slate-400 font-medium">Org: {user?.organizationId || 'Unset'}</p>
             </div>
-            <Shield className="w-8 h-8 text-zinc-200" />
+            <Shield className="w-6 h-6 text-slate-300" />
           </header>
 
-          <div className="p-10 max-w-4xl">
-            <div className="grid md:grid-cols-2 gap-12">
+          <div className="p-8 max-w-5xl">
+            <div className="grid md:grid-cols-2 gap-8">
               {/* Invitation Form */}
-              <section className="bg-white border-4 border-black p-10 shadow-[12px_12px_0px_0px_#000000] relative">
-                <div className="flex items-center gap-3 mb-10 border-b-2 border-black pb-4">
-                  <UserPlus className="w-5 h-5" />
-                  <h2 className="text-xl font-black uppercase tracking-tight">Direct Provisioning</h2>
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-8 shadow-xs relative">
+                <div className="flex items-center gap-2.5 mb-6 border-b border-slate-100 pb-4">
+                  <div className="w-9 h-9 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-xs">
+                    <UserPlus className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-base font-bold text-slate-900">Direct Provisioning</h2>
                 </div>
 
                 {error && (
-                  <div className="mb-6 p-4 bg-red-100 border-2 border-red-600 text-red-600 font-black text-[10px] uppercase tracking-widest text-center">
+                  <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 font-medium text-xs rounded-xl text-center">
                     {error}
                   </div>
                 )}
 
-                <form onSubmit={handleInvite} className="space-y-8">
+                <form onSubmit={handleInvite} className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-4">Target Full Name</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Target Full Name</label>
                     <input 
                       type="text" 
                       required
-                      placeholder="e.g. ROBERT OPPENHEIMER"
-                      className="w-full p-4 border-2 border-black bg-zinc-50 font-bold uppercase text-xs focus:bg-white focus:outline-none transition-all"
+                      placeholder="e.g. Alex Morgan"
+                      className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-medium text-xs focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-4">Secure Email Address</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
                     <input 
                       type="email" 
                       required
-                      placeholder="name@domain.com"
-                      className="w-full p-4 border-2 border-black bg-zinc-50 font-bold lowercase text-xs focus:bg-white focus:outline-none transition-all"
+                      placeholder="name@company.com"
+                      className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-medium text-xs focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-4">Assigned Protocol / Role</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Assigned Role</label>
                     <select 
-                      className="w-full p-4 border-2 border-black bg-zinc-50 font-black text-xs uppercase appearance-none cursor-pointer focus:bg-brand-primary/20 transition-all"
+                      className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-medium text-xs cursor-pointer focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
                     >
-                      <option value="LEARNER">LEARNER ACCESS</option>
-                      <option value="HR_ADMIN">HR ADMINISTRATOR</option>
+                      <option value="LEARNER">Learner Access</option>
+                      <option value="HR_ADMIN">HR Administrator</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-4">Initial Access Key (Password)</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Initial Access Key (Password)</label>
                     <input 
                       type="password" 
                       required
                       placeholder="••••••••"
-                      className="w-full p-4 border-2 border-black bg-zinc-50 font-bold uppercase text-xs focus:bg-white focus:outline-none transition-all"
+                      className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-medium text-xs focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
 
-                  <div className="pt-4">
+                  <div className="pt-2">
                     <button 
                       type="submit"
                       disabled={isSending}
-                      className="btn-yellow w-full py-5 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest transition-all active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50"
+                      className="btn-yellow w-full py-3.5 rounded-xl font-semibold text-xs shadow-xs flex items-center justify-center gap-2 active:translate-y-0.5 disabled:opacity-50"
                     >
                       {isSending ? (
                         <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          TRANSMITTING...
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Provisioning...
                         </>
                       ) : (
                         <>
-                          <Send className="w-5 h-5" />
-                          PROVISION ACCOUNT
+                          <Send className="w-4 h-4" />
+                          Provision Account
                         </>
                       )}
                     </button>
@@ -205,12 +212,12 @@ export default function HRInvitationsPage() {
                 <AnimatePresence>
                   {sent && (
                     <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="absolute inset-x-0 -bottom-20 bg-green-100 border-2 border-green-600 p-4 flex items-center gap-3 text-green-700 font-black text-xs uppercase tracking-widest"
+                      className="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center gap-2 text-emerald-800 font-semibold text-xs"
                     >
-                      <CheckCircle2 className="w-5 h-5" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       Personnel Provisioned Successfully
                     </motion.div>
                   )}
@@ -218,36 +225,30 @@ export default function HRInvitationsPage() {
               </section>
 
               {/* Info / Instructions */}
-              <div className="space-y-10 py-6">
-                <div className="border-l-4 border-black pl-8">
-                  <h3 className="text-xl font-black uppercase italic mb-4">Provisioning Protocol</h3>
-                  <p className="text-sm text-zinc-500 font-bold leading-relaxed">
+              <div className="space-y-6 py-2">
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
+                  <h3 className="text-sm font-bold text-slate-900 mb-2">Provisioning Protocol</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed font-normal">
                     Direct provisioning creates an active account immediately. 
                     The user will be able to log in using the email and 
-                    initial access key provided here.
+                    initial password provided here.
                   </p>
                 </div>
 
-                <div className="bg-zinc-100 border-2 border-black p-8">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-zinc-400">Security Checkpoint</h4>
-                  <ul className="space-y-4">
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-6">
+                  <h4 className="text-xs font-semibold text-slate-700 mb-3">Security Checkpoint</h4>
+                  <ul className="space-y-2.5">
                     {[
                       'Email verification is mandatory',
                       'Role-based access is locked at provisioning',
-                      'IP-bound invitation links enabled'
+                      'Encrypted credentials protocol enabled'
                     ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-xs font-black uppercase italic">
-                        <div className="w-1.5 h-1.5 bg-black" />
+                      <li key={i} className="flex items-center gap-2.5 text-xs text-slate-600 font-normal">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
                         {item}
                       </li>
                     ))}
                   </ul>
-                </div>
-
-                <div className="pt-4">
-                  <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-black transition-colors">
-                    View Invitation Log <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             </div>

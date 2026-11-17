@@ -57,20 +57,19 @@ ${modulesDescription}
 
 REQUIREMENTS:
 
-1. Generate EXACTLY 3 UNIQUE multiple-choice questions for EACH module.
-2. Do NOT skip any module.
-3. Each question must contain EXACTLY 4 options.
-4. Include practical and conceptual questions.
-5. Mix difficulty levels:
-   - easy
-   - medium
-   - hard
-6. Questions should evaluate:
-   - understanding
-   - application
-   - problem-solving
-7. Each question MUST belong to the correct module.
-8. Include relevant skill tags based on module skills.
+1. Generate EXACTLY 3 multiple-choice questions for EACH module.
+2. Each question MUST test a DIFFERENT concept from the module.
+3. Do NOT rephrase or repeat the same question.
+4. The three questions must have different question stems (do not start with the same wording).
+5. Generate:
+   - 1 Easy question (basic understanding)
+   - 1 Medium question (application)
+   - 1 Hard question (problem-solving or scenario-based)
+6. Each question must contain EXACTLY 4 options.
+7. Randomize the position of the correct answer.
+8. Incorrect options should be realistic and plausible.
+9. Use only the provided module description, skills, and sub-modules to create questions.
+10. Return ONLY valid JSON.
 
 Return ONLY raw valid JSON array.
 
@@ -92,6 +91,9 @@ JSON structure:
     "difficulty": "easy | medium | hard"
   }
 ]
+
+IMPORTANT:
+If a module covers multiple topics, each of the three questions must come from a different topic or skill. Never generate duplicate or paraphrased questions.
 
 IMPORTANT:
 - Do not include markdown

@@ -1,103 +1,78 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { assessmentService } from '@/services/assessmentService';
+import { Assessment, Question } from '@/services/courseService';
+import { learnerService } from '@/services/learnerService';
 import { 
+  Zap, 
   ArrowLeft, 
-  ArrowRight,
   CheckCircle2, 
   XCircle, 
+  ArrowRight, 
+  Loader2, 
+  Sparkles,
   ChevronRight,
-  Loader2,
-  Award,
-  Zap,
-  Info
+  TrendingUp,
+  BrainCircuit
 } from 'lucide-react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useRouter } from 'next/navigation';
-import { assessmentService, Assessment, Question } from '@/services/assessmentService';
-import { learnerService } from '@/services/learnerService';
+import Link from 'next/link';
 
-export default function AssessmentPage() {
+export default function AssessmentPlayer() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.courseId as string;
 
   const [assessment, setAssessment] = useState<Assessment | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
-  const [correctQuestionIndices, setCorrectQuestionIndices] = useState<number[]>([]);
-  const [userAnswers, setUserAnswers] = useState<{ questionIndex: number; chosenOption: number; isCorrect: boolean }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isFinished, setIsFinished] = useState(false);
+  const [learnerAnswers, setLearnerAnswers] = useState<{ [key: number]: number }>({});
   const [personalizedPathData, setPersonalizedPathData] = useState<any>(null);
   const [fetchingPath, setFetchingPath] = useState(false);
 
-  const fetchPathAndDisplay = async () => {
-    try {
-      setFetchingPath(true);
-      const data = await assessmentService.getPersonalizedPath(courseId);
-      setPersonalizedPathData(data);
-    } catch (error) {
-      console.error('Failed to fetch personalized path:', error);
-      alert('Failed to retrieve personalized learning roadmap.');
-    } finally {
-      setFetchingPath(false);
-    }
-  };
-
   useEffect(() => {
-    const fetchAssessment = async () => {
+    async function loadAssessment() {
       try {
-        const [data, myEnrollments] = await Promise.all([
-          assessmentService.getAssessmentByCourseId(courseId),
-          learnerService.getMyEnrollments()
-        ]);
+        setLoading(true);
+        const data = await assessmentService.getAssessmentByCourse(courseId);
         setAssessment(data);
-
-        const activeEnrollment = myEnrollments.find(e => (e.courseId?._id || e.courseId) === courseId);
-        if (activeEnrollment && activeEnrollment.score !== undefined && activeEnrollment.score !== null) {
-          setScore(activeEnrollment.score || 0);
-          setIsFinished(true);
-          try {
-            const pathData = await assessmentService.getPersonalizedPath(courseId);
-            setPersonalizedPathData(pathData);
-          } catch (pathErr) {
-            console.error('Failed to pre-fetch path data:', pathErr);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch assessment:', error);
+      } catch (err) {
+        console.error('Failed to load assessment', err);
       } finally {
         setLoading(false);
       }
-    };
-    fetchAssessment();
+    }
+    loadAssessment();
   }, [courseId]);
 
-  const handleOptionSelect = (index: number) => {
+  const handleOptionSelect = (optionIndex: number) => {
     if (isAnswered) return;
-    setSelectedOption(index);
+    setSelectedOption(optionIndex);
   };
 
   const handleSubmitAnswer = () => {
-    if (selectedOption === null || isAnswered) return;
-    
-    const isCorrect = selectedOption === assessment?.questions[currentQuestionIndex].correctAnswer;
-    setIsAnswered(true);
+    if (selectedOption === null || !assessment) return;
+
+    const currentQuestion = assessment.questions[currentQuestionIndex];
+    const isCorrect = selectedOption === currentQuestion.correctOptionIndex;
+
+    setLearnerAnswers({
+      ...learnerAnswers,
+      [currentQuestionIndex]: selectedOption
+    });
+
     if (isCorrect) {
       setScore(prev => prev + 1);
-      setCorrectQuestionIndices(prev => [...prev, currentQuestionIndex]);
     }
-    
-    setUserAnswers(prev => [...prev, {
-      questionIndex: currentQuestionIndex,
-      chosenOption: selectedOption,
-      isCorrect
-    }]);
+
+    setIsAnswered(true);
   };
 
   const handleNextQuestion = async () => {
@@ -108,51 +83,46 @@ export default function AssessmentPage() {
       setSelectedOption(null);
       setIsAnswered(false);
     } else {
+      // Finished
       setIsFinished(true);
-      // Submit score to backend
       try {
-        await assessmentService.submitScore(courseId, score, assessment.questions.length, correctQuestionIndices, userAnswers);
-      } catch (error) {
-        console.error('Failed to submit score:', error);
+        // Record final score on server and trigger self-healing/recalculation
+        await assessmentService.recordScore(courseId, score, assessment.questions.length);
+      } catch (err) {
+        console.error('Failed to save assessment score', err);
       }
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!isAnswered) {
-          if (selectedOption !== null) {
-            handleSubmitAnswer();
-          }
-        } else {
-          handleNextQuestion();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isAnswered, selectedOption, handleSubmitAnswer, handleNextQuestion]);
+  const fetchPathAndDisplay = async () => {
+    try {
+      setFetchingPath(true);
+      const res = await learnerService.getPersonalizedPath(courseId);
+      setPersonalizedPathData(res.data);
+    } catch (err) {
+      console.error('Failed to get path', err);
+    } finally {
+      setFetchingPath(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-brand-primary animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
       </div>
     );
   }
 
   if (!assessment || !assessment.questions || assessment.questions.length === 0) {
     return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-10 text-center">
-        <XCircle className="w-16 h-16 text-zinc-300 mb-6" />
-        <h1 className="text-3xl font-black uppercase italic mb-4">Assessment Not Found</h1>
-        <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-10">This curriculum does not have an active evaluation layer yet.</p>
-        <Link href="/dashboard/learner" className="bg-black text-white px-10 py-4 font-black uppercase text-xs tracking-widest border-4 border-black hover:bg-brand-primary transition-all">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-10 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-4 text-slate-400">
+          <XCircle className="w-7 h-7" />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Assessment Not Found</h1>
+        <p className="text-xs text-slate-500 mb-6 max-w-sm">This curriculum does not have an active evaluation layer yet.</p>
+        <Link href="/dashboard/learner" className="btn-yellow px-6 py-2.5 rounded-xl font-semibold text-xs shadow-xs">
           Return to Roadmap
         </Link>
       </div>
@@ -164,44 +134,43 @@ export default function AssessmentPage() {
 
   if (isFinished) {
     const finalScorePercent = Math.round((score / assessment.questions.length) * 100);
-    const isPassed = finalScorePercent >= 70;
 
     return (
       <ProtectedRoute allowedRoles={['LEARNER', 'HR_ADMIN', 'SUPER_ADMIN']}>
-        <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-6 md:p-10">
+        <div className="min-h-screen bg-slate-50/60 flex flex-col items-center justify-center p-6 md:p-10">
           <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="max-w-2xl w-full bg-white border-4 border-black p-12 shadow-[16px_16px_0px_0px_#000000] text-center"
+            className="max-w-2xl w-full bg-white border border-slate-200/90 rounded-2xl p-8 md:p-12 shadow-xl shadow-slate-200/50 text-center"
           >
-            <div className={`w-24 h-24 border-4 border-black rounded-full flex items-center justify-center mx-auto mb-8 bg-brand-primary`}>
-              <Zap className="w-12 h-12 text-black fill-black" />
+            <div className="w-16 h-16 rounded-2xl border border-indigo-100 bg-indigo-50 flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-xs">
+              <Zap className="w-8 h-8 fill-current" />
             </div>
             
-            <h1 className="text-4xl font-black uppercase tracking-tight italic mb-2">Analysis Complete</h1>
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-10">We have mapped your skill proficiency for: {assessment.title}</p>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Analysis Complete</h1>
+            <p className="text-xs text-slate-500 mb-8">We have mapped your skill proficiency for: {assessment.title}</p>
             
             {personalizedPathData ? (
-              <div className="text-left mb-12 border-4 border-black p-6 bg-zinc-50 shadow-[8px_8px_0px_0px_#000000]">
-                <h3 className="text-sm font-black uppercase italic mb-4 border-b-2 border-black pb-2 flex items-center gap-2">
-                  <Zap className="w-4 h-4 fill-brand-primary text-black" />
+              <div className="text-left mb-8 border border-slate-200 rounded-xl p-6 bg-slate-50/50">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-indigo-600" />
                   Your Optimized Learning Journey:
                 </h3>
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                   {personalizedPathData.recommendedOrder.map((mod: any, index: number) => (
-                    <div key={mod._id} className="flex gap-3 items-start border-b border-zinc-200 pb-3 last:border-b-0 last:pb-0">
-                      <div className="bg-black text-brand-primary text-[10px] font-black italic w-6 h-6 shrink-0 flex items-center justify-center border border-black">
+                    <div key={mod._id} className="flex gap-3 items-start bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                      <div className="bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-lg shrink-0 flex items-center justify-center">
                         {index + 1}
                       </div>
                       <div>
-                        <h4 className="font-black uppercase text-xs tracking-wider text-black">{mod.title}</h4>
+                        <h4 className="font-semibold text-xs text-slate-900">{mod.title}</h4>
                         {mod.content && (
-                          <p className="text-[10px] text-zinc-600 line-clamp-2 mt-0.5">{mod.content}</p>
+                          <p className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{mod.content}</p>
                         )}
                         {mod.skillsCovered && mod.skillsCovered.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {mod.skillsCovered.map((skill: string, i: number) => (
-                              <span key={i} className="bg-brand-primary/20 text-[8px] font-black uppercase px-1 border border-black/10 text-black">
+                              <span key={i} className="bg-indigo-50 text-indigo-700 text-[9px] font-semibold px-1.5 py-0.5 rounded border border-indigo-100">
                                 {skill}
                               </span>
                             ))}
@@ -213,56 +182,56 @@ export default function AssessmentPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-black text-brand-primary p-8 border-4 border-black mb-12 shadow-[8px_8px_0px_0px_#000000]">
-                <h3 className="text-xl font-black uppercase italic mb-4 text-brand-primary">Personalized Path Generated</h3>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-80 leading-relaxed text-brand-primary">
-                  Based on your responses, our AI has architected a bespoke learning trajectory to optimize your growth.
+              <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-6 mb-8 text-center">
+                <h3 className="text-base font-bold text-indigo-950 mb-2">Personalized Path Generated</h3>
+                <p className="text-xs text-indigo-800 leading-relaxed font-normal max-w-md mx-auto">
+                  Based on your responses, our AI has architected a bespoke learning trajectory to optimize your skill growth.
                 </p>
               </div>
             )}
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {!personalizedPathData ? (
                 <>
                   <button 
                     onClick={fetchPathAndDisplay}
                     disabled={fetchingPath}
-                    className="w-full bg-black text-brand-primary border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                    className="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 py-3.5 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {fetchingPath ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-brand-primary" />
+                        <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
                         Analyzing Knowledge Base...
                       </>
                     ) : (
                       <>
                         View Personalized Path
-                        <ChevronRight className="w-4 h-4 text-brand-primary" />
+                        <ChevronRight className="w-4 h-4 text-indigo-600" />
                       </>
                     )}
                   </button>
 
                   <button 
                     onClick={() => router.push(`/dashboard/learner/courses/${courseId}`)}
-                    className="w-full bg-brand-primary text-black border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
+                    className="btn-yellow w-full py-3.5 rounded-xl font-semibold text-xs shadow-xs flex items-center justify-center gap-2"
                   >
-                    Launch Personalized Path
+                    Launch Learning Path
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </>
               ) : (
                 <button 
                   onClick={() => router.push(`/dashboard/learner/courses/${courseId}`)}
-                  className="w-full bg-brand-primary text-black border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
+                  className="btn-yellow w-full py-3.5 rounded-xl font-semibold text-xs shadow-xs flex items-center justify-center gap-2"
                 >
-                  Launch Personalized Path
+                  Launch Learning Path
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
 
               <button 
                 onClick={() => window.location.reload()}
-                className="w-full bg-white border-4 border-black px-8 py-5 font-black uppercase text-xs tracking-widest hover:bg-zinc-100 transition-all"
+                className="w-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 py-3.5 rounded-xl font-semibold text-xs shadow-xs transition-all"
               >
                 Re-take Assessment
               </button>
@@ -275,25 +244,25 @@ export default function AssessmentPage() {
 
   return (
     <ProtectedRoute allowedRoles={['LEARNER', 'HR_ADMIN', 'SUPER_ADMIN']}>
-      <div className="min-h-screen bg-zinc-50 flex flex-col text-black">
-        <header className="h-24 border-b-4 border-black bg-white flex items-center justify-between px-10 sticky top-0 z-10">
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard/learner" className="p-2 border-2 border-black hover:bg-zinc-100 transition-all">
-              <ArrowLeft className="w-5 h-5" />
+      <div className="min-h-screen bg-slate-50/60 flex flex-col text-slate-900">
+        <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/learner" className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-xs text-slate-600">
+              <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tight italic">Technical Evaluation</h1>
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{assessment.title}</p>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">Technical Evaluation</h1>
+              <p className="text-xs text-slate-400 font-medium">{assessment.title}</p>
             </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-5">
             <div className="text-right">
-              <span className="block text-[10px] font-black uppercase text-zinc-500">Progress</span>
-              <span className="text-lg font-black italic">{currentQuestionIndex + 1} / {assessment.questions.length}</span>
+              <span className="block text-[10px] font-medium text-slate-400">Progress</span>
+              <span className="text-xs font-bold text-slate-800">{currentQuestionIndex + 1} of {assessment.questions.length}</span>
             </div>
-            <div className="w-16 h-2 border-2 border-black bg-zinc-100 hidden md:block">
+            <div className="w-24 h-2 rounded-full bg-slate-200 hidden md:block overflow-hidden">
               <div 
-                className="h-full bg-brand-primary" 
+                className="h-full bg-indigo-600 rounded-full transition-all duration-300" 
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -301,62 +270,67 @@ export default function AssessmentPage() {
         </header>
 
         <main className="flex-1 p-6 md:p-10 flex flex-col items-center">
-          <div className="max-w-4xl w-full">
-            <div className="mb-12">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="bg-black text-white px-3 py-1 text-[10px] font-black italic uppercase tracking-widest">
+          <div className="max-w-3xl w-full">
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-0.5 text-xs font-semibold rounded-md">
                   Question {currentQuestionIndex + 1}
                 </span>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5 flex-wrap">
                   {currentQuestion.skillTags.map((tag, i) => (
-                    <span key={i} className="bg-brand-primary/20 border border-black/10 px-2 py-0.5 text-[8px] font-black uppercase">
+                    <span key={i} className="bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-medium rounded-md">
                       {tag}
                     </span>
                   ))}
                 </div>
               </div>
-              <h2 className="text-2xl md:text-3xl font-black uppercase leading-tight tracking-tight">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-900 leading-snug">
                 {currentQuestion.question}
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 mb-10">
+            <div className="grid grid-cols-1 gap-3.5 mb-8">
               {currentQuestion.options.map((option, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleOptionSelect(idx)}
                   disabled={isAnswered}
                   className={`
-                    p-6 border-4 border-black text-left transition-all flex items-center justify-between
-                    ${selectedOption === idx ? 'bg-black text-white scale-[1.02]' : 'bg-white hover:bg-zinc-50'}
-                    ${!isAnswered && 'shadow-[4px_4px_0px_0px_#000000] hover:shadow-[8px_8px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 active:shadow-none'}
+                    p-5 rounded-2xl border text-left transition-all flex items-center justify-between
+                    ${selectedOption === idx 
+                      ? 'border-indigo-600 bg-indigo-50/70 text-indigo-950 font-semibold shadow-xs ring-1 ring-indigo-600' 
+                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-800 shadow-xs'}
                   `}
                 >
-                  <div className="flex items-center gap-6">
-                    <span className="text-xl font-black italic opacity-30">0{idx + 1}</span>
-                    <span className="font-bold">{option}</span>
+                  <div className="flex items-center gap-4">
+                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
+                      selectedOption === idx ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      0{idx + 1}
+                    </span>
+                    <span className="text-sm font-medium">{option}</span>
                   </div>
                 </button>
               ))}
             </div>
 
-            <div className="flex justify-end sticky bottom-10">
+            <div className="flex justify-end sticky bottom-8">
               {!isAnswered ? (
                 <button
                   onClick={handleSubmitAnswer}
                   disabled={selectedOption === null}
-                  className="bg-black text-white px-12 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50 disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-none flex items-center gap-3"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-xl font-semibold text-xs shadow-xs transition-all disabled:opacity-40 flex items-center gap-2"
                 >
                   Lock Response
-                  <Zap className="w-4 h-4 fill-brand-primary" />
+                  <Zap className="w-4 h-4 fill-current" />
                 </button>
               ) : (
                 <button
                   onClick={handleNextQuestion}
-                  className="bg-brand-primary border-4 border-black px-12 py-5 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center gap-3"
+                  className="btn-yellow px-8 py-3.5 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center gap-2"
                 >
                   {currentQuestionIndex === assessment.questions.length - 1 ? 'Generate Path' : 'Next Question'}
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               )}
             </div>

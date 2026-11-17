@@ -304,15 +304,15 @@ export default function CoursePlayerPage() {
 
   if (errorMsg || !course) {
     return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-10 text-center">
-        <div className="w-16 h-16 border-4 border-black bg-red-100 flex items-center justify-center mb-6">
-          <Info className="w-8 h-8 text-red-600" />
+      <div className="min-h-screen bg-slate-50/60 flex flex-col items-center justify-center p-10 text-center">
+        <div className="w-14 h-14 border border-rose-200 bg-rose-50 rounded-2xl flex items-center justify-center mb-6 text-rose-600 shadow-xs">
+          <Info className="w-7 h-7" />
         </div>
-        <h1 className="text-3xl font-black uppercase italic mb-4">Launch Failure</h1>
-        <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-8 max-w-md">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Launch Failure</h1>
+        <p className="text-xs text-slate-500 mb-6 max-w-md font-normal">
           {errorMsg || 'Course not found or database record missing.'}
         </p>
-        <Link href="/dashboard/learner" className="bg-black text-white px-8 py-4 font-black uppercase text-xs tracking-widest border-4 border-black hover:bg-brand-primary hover:text-black transition-all shadow-[4px_4px_0px_0px_#000000]">
+        <Link href="/dashboard/learner" className="btn-yellow px-6 py-2.5 rounded-xl font-semibold text-xs shadow-xs">
           Return to Dashboard
         </Link>
       </div>
@@ -337,42 +337,42 @@ export default function CoursePlayerPage() {
 
   return (
     <ProtectedRoute allowedRoles={['LEARNER', 'HR_ADMIN', 'SUPER_ADMIN']}>
-      <div className="min-h-screen bg-zinc-50 flex flex-col text-black font-sans">
+      <div className="min-h-screen bg-slate-50/60 flex flex-col text-slate-900 font-sans">
         
         {/* Header */}
-        <header className="h-20 border-b-4 border-black bg-white flex items-center justify-between px-6 md:px-10 sticky top-0 z-20">
+        <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 md:px-10 sticky top-0 z-20">
           <div className="flex items-center gap-4">
             <Link 
               href="/dashboard/learner" 
-              className="p-2 border-2 border-black hover:bg-zinc-100 transition-all shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-xs text-slate-600"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <div>
-              <span className="bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase italic tracking-widest">
+              <span className="bg-slate-100 text-slate-700 px-2 py-0.5 text-[10px] font-semibold rounded-md">
                 {course.category}
               </span>
-              <h1 className="text-base md:text-lg font-black uppercase tracking-tight italic truncate max-w-[200px] sm:max-w-[400px]">
+              <h1 className="text-base font-bold text-slate-900 truncate max-w-[200px] sm:max-w-[400px]">
                 {course.title}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-5">
             <div className="text-right hidden sm:block">
-              <span className="block text-[9px] font-black uppercase text-zinc-400">Course Progress</span>
-              <span className="text-sm font-black italic">{overallProgress}% COMPLETE</span>
+              <span className="block text-[10px] font-medium text-slate-400">Course Progress</span>
+              <span className="text-xs font-bold text-slate-800">{overallProgress}% Complete</span>
             </div>
-            <div className="w-32 h-3 border-2 border-black bg-zinc-100 overflow-hidden relative">
+            <div className="w-28 h-2 rounded-full bg-slate-200 overflow-hidden relative">
               <div 
-                className="h-full bg-brand-primary transition-all duration-500" 
+                className="h-full bg-indigo-600 rounded-full transition-all duration-500" 
                 style={{ width: `${overallProgress}%` }}
               />
             </div>
             
             {overallProgress === 100 && (
-              <div className="bg-green-500 text-black border-2 border-black px-3 py-1 text-[9px] font-black uppercase italic tracking-wider flex items-center gap-1 shadow-[2px_2px_0px_0px_#000000]">
-                <Award className="w-3. h-3" />
+              <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 text-xs font-semibold rounded-lg flex items-center gap-1">
+                <Award className="w-3.5 h-3.5" />
                 Passed
               </div>
             )}
@@ -383,21 +383,21 @@ export default function CoursePlayerPage() {
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden h-[calc(100vh-5rem)]">
           
           {/* Left Pane - Syllabus / Sidebar */}
-          <aside className="w-full lg:w-96 border-b-4 lg:border-b-0 lg:border-r-4 border-black bg-white flex flex-col overflow-y-auto shrink-0 z-10">
-            <div className="p-4 border-b-2 border-black bg-zinc-50 flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                <BookOpen className="w-4 h-4" />
+          <aside className="w-full lg:w-96 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white flex flex-col overflow-y-auto shrink-0 z-10">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-indigo-600" />
                 Syllabus Sequence
               </span>
               {isPathPersonalized && (
-                <span className="bg-brand-primary text-black border border-black px-2 py-0.5 text-[8px] font-black uppercase tracking-wider flex items-center gap-0.5 shadow-[1px_1px_0px_0px_#000000]">
-                  <Zap className="w-2.5 h-2.5 fill-black" />
+                <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 text-[10px] font-semibold rounded-md flex items-center gap-1 shadow-xs">
+                  <Zap className="w-2.5 h-2.5 fill-indigo-600 text-indigo-600" />
                   AI Path
                 </span>
               )}
             </div>
 
-            <div className="flex-1 divide-y-2 divide-black">
+            <div className="flex-1 divide-y divide-slate-100">
               {modules.map((mod, modIdx) => {
                 const isExpanded = !!expandedModules[mod._id];
                 const modProgress = progressMap[mod._id] || { status: 'NOT_STARTED', completionPercentage: 0 };
@@ -405,7 +405,7 @@ export default function CoursePlayerPage() {
                 const isActiveModule = activeModuleIndex === modIdx;
 
                 return (
-                  <div key={mod._id} className={`transition-all ${isActiveModule ? 'bg-brand-primary/5' : ''}`}>
+                  <div key={mod._id} className={`transition-all ${isActiveModule ? 'bg-indigo-50/30' : ''}`}>
                     {/* Module Accordion Header */}
                     <div 
                       onClick={() => {
@@ -413,38 +413,38 @@ export default function CoursePlayerPage() {
                         setActiveSubModuleIndex(hasSubmodules ? 0 : -1);
                         toggleExpandModule(mod._id);
                       }}
-                      className={`p-4 flex items-start gap-3 cursor-pointer select-none hover:bg-zinc-50 transition-all ${
-                        isActiveModule ? 'border-l-4 border-black' : ''
+                      className={`p-4 flex items-start gap-3 cursor-pointer select-none hover:bg-slate-50 transition-all ${
+                        isActiveModule ? 'border-l-4 border-indigo-600' : ''
                       }`}
                     >
-                      <div className="bg-black text-brand-primary text-[10px] font-black italic w-6 h-6 shrink-0 flex items-center justify-center border border-black">
+                      <div className="bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-bold w-6 h-6 rounded-lg shrink-0 flex items-center justify-center">
                         {modIdx + 1}
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-black uppercase text-xs tracking-wider text-black leading-tight truncate">
+                        <h3 className={`text-xs font-semibold leading-tight truncate ${isActiveModule ? 'text-indigo-600' : 'text-slate-800'}`}>
                           {mod.title}
                         </h3>
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {mod.estimatedTime && (
-                            <span className="text-[8px] font-black uppercase tracking-wider text-zinc-400 flex items-center gap-0.5">
+                            <span className="text-[10px] font-medium text-slate-400 flex items-center gap-0.5">
                               <Clock className="w-2.5 h-2.5" />
                               {mod.estimatedTime} Min
                             </span>
                           )}
-                          <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 border border-black/10 ${
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
                             modProgress.status === 'COMPLETED' 
-                              ? 'bg-green-100 text-green-700' 
+                              ? 'bg-emerald-50 text-emerald-700' 
                               : modProgress.status === 'IN_PROGRESS'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-zinc-100 text-zinc-500'
+                              ? 'bg-sky-50 text-sky-700'
+                              : 'bg-slate-100 text-slate-500'
                           }`}>
-                            {modProgress.status === 'COMPLETED' ? 'COMPLETED' : modProgress.status === 'IN_PROGRESS' ? `${modProgress.completionPercentage}%` : 'NOT STARTED'}
+                            {modProgress.status === 'COMPLETED' ? 'Completed' : modProgress.status === 'IN_PROGRESS' ? `${modProgress.completionPercentage}%` : 'Not Started'}
                           </span>
                         </div>
                       </div>
 
-                      <button className="text-black p-0.5 border border-black/15 bg-white hover:bg-zinc-100">
+                      <button className="text-slate-400 p-1 rounded-lg hover:bg-slate-100">
                         {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                       </button>
                     </div>
@@ -456,7 +456,7 @@ export default function CoursePlayerPage() {
                           initial={{ height: 0 }}
                           animate={{ height: 'auto' }}
                           exit={{ height: 0 }}
-                          className="overflow-hidden bg-zinc-50/50 border-t border-black/10"
+                          className="overflow-hidden bg-slate-50/50 border-t border-slate-100"
                         >
                           <div className="py-2">
                             {/* Main module info slide link */}
@@ -466,11 +466,11 @@ export default function CoursePlayerPage() {
                                 setActiveModuleIndex(modIdx);
                                 setActiveSubModuleIndex(-1);
                               }}
-                              className={`px-6 py-2 flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider ${
-                                isActiveModule && activeSubModuleIndex === -1 ? 'bg-black text-brand-primary' : 'text-zinc-600 hover:bg-zinc-100'
+                              className={`px-6 py-2 flex items-center gap-2 cursor-pointer text-xs font-medium ${
+                                isActiveModule && activeSubModuleIndex === -1 ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'
                               }`}
                             >
-                              <Info className="w-3.5 h-3.5 shrink-0" />
+                              <Info className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
                               Overview & Objectives
                             </div>
 
@@ -487,10 +487,10 @@ export default function CoursePlayerPage() {
                                     setActiveModuleIndex(modIdx);
                                     setActiveSubModuleIndex(subIdx);
                                   }}
-                                  className={`pl-8 pr-4 py-2.5 flex items-center gap-3 cursor-pointer transition-all border-l-2 ${
+                                  className={`pl-8 pr-4 py-2 flex items-center gap-2.5 cursor-pointer transition-all border-l-2 ${
                                     isActiveSub 
-                                      ? 'bg-brand-primary/10 border-black font-bold' 
-                                      : 'border-transparent hover:bg-zinc-100'
+                                      ? 'bg-indigo-50/80 border-indigo-600 font-semibold text-indigo-700' 
+                                      : 'border-transparent hover:bg-slate-100 text-slate-700'
                                   }`}
                                 >
                                   {/* Custom Checkbox */}
@@ -499,18 +499,18 @@ export default function CoursePlayerPage() {
                                       e.stopPropagation();
                                       handleToggleSubModule(mod._id, subIdx);
                                     }}
-                                    className="text-black shrink-0 hover:scale-105 transition-transform"
+                                    className="text-slate-400 shrink-0 hover:scale-105 transition-transform"
                                   >
                                     {isCompleted ? (
-                                      <CheckSquare className="w-4 h-4 fill-brand-primary text-black" />
+                                      <CheckSquare className="w-4 h-4 text-emerald-600" />
                                     ) : (
-                                      <Square className="w-4 h-4 text-zinc-400" />
+                                      <Square className="w-4 h-4 text-slate-300" />
                                     )}
                                   </button>
                                   
-                                  <span className={`text-[11px] uppercase tracking-wider leading-snug ${
-                                    isCompleted ? 'line-through text-zinc-400' : 'text-black'
-                                  } ${isActiveSub ? 'font-black text-black' : ''}`}>
+                                  <span className={`text-xs leading-snug truncate ${
+                                    isCompleted ? 'line-through text-slate-400' : 'text-slate-800'
+                                  } ${isActiveSub ? 'font-semibold text-indigo-700' : ''}`}>
                                     {sub.title}
                                   </span>
                                 </div>
@@ -527,19 +527,19 @@ export default function CoursePlayerPage() {
           </aside>
 
           {/* Right Pane - Course Player display */}
-          <main className="flex-1 flex flex-col bg-zinc-50 overflow-y-auto p-4 md:p-8">
+          <main className="flex-1 flex flex-col bg-slate-50/60 overflow-y-auto p-4 md:p-8">
             <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-between">
               
               <div className="space-y-6">
                 {/* Active Info Banner */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
-                    Module {activeModuleIndex + 1} // {activeSubModuleIndex === -1 ? 'OVERVIEW' : `LESSON ${activeSubModuleIndex + 1}`}
+                  <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                    Module {activeModuleIndex + 1} // {activeSubModuleIndex === -1 ? 'Overview' : `Lesson ${activeSubModuleIndex + 1}`}
                   </span>
                   {currentModule?.skillsCovered && currentModule.skillsCovered.length > 0 && (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5 flex-wrap">
                       {currentModule.skillsCovered.map((skill, i) => (
-                        <span key={i} className="bg-brand-primary/20 text-[8px] font-black uppercase px-2 py-0.5 border border-black/10 text-black">
+                        <span key={i} className="bg-indigo-50 text-indigo-700 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-indigo-100">
                           {skill}
                         </span>
                       ))}
@@ -548,13 +548,13 @@ export default function CoursePlayerPage() {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="bg-white border-4 border-black p-6 md:p-8 shadow-[8px_8px_0px_0px_#000000]">
-                  <h2 className="text-xl md:text-3xl font-black uppercase italic tracking-tight mb-6">
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 md:p-8 shadow-xs">
+                  <h2 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 mb-6">
                     {activeTitle}
                   </h2>
 
                   {/* Video Screen */}
-                  <div className="mb-8 border-4 border-black bg-black aspect-video relative overflow-hidden group shadow-[4px_4px_0px_0px_#facc15]">
+                  <div className="mb-8 border border-slate-200 bg-slate-900 aspect-video rounded-2xl relative overflow-hidden group shadow-sm">
                     {embedUrl ? (
                       <iframe
                         src={embedUrl}
@@ -564,12 +564,12 @@ export default function CoursePlayerPage() {
                         title={activeTitle}
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-zinc-400 bg-zinc-950">
-                        <div className="w-16 h-16 border-2 border-dashed border-zinc-700 bg-zinc-900 rounded-full flex items-center justify-center mb-4">
-                          <Play className="w-6 h-6 text-zinc-600 fill-zinc-600" />
+                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-900">
+                        <div className="w-14 h-14 border border-dashed border-slate-700 bg-slate-800 rounded-full flex items-center justify-center mb-3">
+                          <Play className="w-6 h-6 text-slate-400 fill-slate-400" />
                         </div>
-                        <h4 className="font-black uppercase text-xs tracking-widest text-white mb-1">Conceptual Guide</h4>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 max-w-xs">
+                        <h4 className="font-semibold text-xs text-white mb-1">Conceptual Guide</h4>
+                        <p className="text-xs text-slate-400 max-w-xs">
                           No screen demo is associated. Study the syllabus documentation directives below.
                         </p>
                       </div>
@@ -578,27 +578,27 @@ export default function CoursePlayerPage() {
 
                   {/* Text details content */}
                   {activeContent ? (
-                    <div className="prose max-w-none text-zinc-800">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-200 pb-2 mb-4">Study Directives</h4>
-                      <p className="text-xs md:text-sm font-semibold uppercase tracking-wider leading-relaxed bg-zinc-50 p-4 border-2 border-dashed border-black/15 text-zinc-700 whitespace-pre-line">
+                    <div className="prose max-w-none text-slate-800">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 mb-3">Study Directives</h4>
+                      <p className="text-xs md:text-sm font-normal leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200/70 text-slate-700 whitespace-pre-line">
                         {activeContent}
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center py-6 text-zinc-400 text-xs font-bold uppercase tracking-widest border-2 border-dashed border-black/10">
+                    <div className="text-center py-6 text-slate-400 text-xs font-medium border border-dashed border-slate-200 rounded-xl">
                       No additional study notes available for this section.
                     </div>
                   )}
 
                   {/* If no submodules, allow completing main module here */}
                   {currentModule && (!currentModule.subModules || currentModule.subModules.length === 0) && (
-                    <div className="mt-8 pt-6 border-t-2 border-black flex justify-end">
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                       <button
                         onClick={() => handleToggleMainModuleCompletion(currentModule._id)}
-                        className={`flex items-center gap-2 px-6 py-3 font-black uppercase text-xs tracking-widest border-2 border-black shadow-[4px_4px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all ${
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all ${
                           progressMap[currentModule._id]?.status === 'COMPLETED'
-                            ? 'bg-green-500 text-black'
-                            : 'bg-white text-black hover:bg-zinc-100'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                         }`}
                       >
                         <CheckCircle2 className="w-4 h-4" />
@@ -610,11 +610,11 @@ export default function CoursePlayerPage() {
               </div>
 
               {/* Player Bottom Navigation Control Buttons */}
-              <div className="flex items-center justify-between gap-4 mt-8 pt-4 border-t-2 border-black/15">
+              <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-200">
                 <button
                   onClick={handlePrev}
                   disabled={isFirstItem}
-                  className="px-6 py-4 border-4 border-black bg-white hover:bg-zinc-100 text-black font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] disabled:opacity-30 disabled:pointer-events-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                  className="px-5 py-2.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl shadow-xs disabled:opacity-30 disabled:pointer-events-none transition-all"
                 >
                   Previous
                 </button>
@@ -622,7 +622,7 @@ export default function CoursePlayerPage() {
                 {isLastItem ? (
                   <button
                     onClick={() => router.push('/dashboard/learner')}
-                    className="px-8 py-4 border-4 border-black bg-green-500 text-black font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:bg-green-600 transition-all flex items-center gap-2"
+                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2"
                   >
                     Finish Course
                     <Award className="w-4 h-4" />
@@ -639,7 +639,7 @@ export default function CoursePlayerPage() {
                       }
                       handleNext();
                     }}
-                    className="px-8 py-4 border-4 border-black bg-brand-primary text-black font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:bg-yellow-500 transition-all flex items-center gap-2"
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2"
                   >
                     {isViewingSubmodule && !completedSubModules[`${currentModule._id}_${activeSubModuleIndex}`]
                       ? 'Complete & Continue'

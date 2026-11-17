@@ -218,35 +218,37 @@ export default function LearnerDashboard() {
 
   return (
     <ProtectedRoute allowedRoles={['LEARNER', 'HR_ADMIN', 'SUPER_ADMIN']}>
-      <div className="min-h-screen bg-zinc-50 flex text-black">
+      <div className="min-h-screen bg-slate-50/60 flex text-slate-900">
         {/* Sidebar */}
-        <aside className="w-64 border-r-4 border-black bg-white flex flex-col fixed h-full">
-          <div className="p-8 border-b-4 border-black bg-brand-primary">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 border-2 border-black bg-white" />
-              <span className="font-display font-black tracking-tighter text-xl">VERTICLE</span>
+        <aside className="w-64 border-r border-slate-200 bg-white flex flex-col fixed h-full z-20">
+          <div className="p-6 border-b border-slate-200 bg-white">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-xs">
+                <Sparkles className="w-5 h-5 fill-current" />
+              </div>
+              <span className="font-display font-bold tracking-tight text-xl text-slate-900">VERTICLE</span>
             </Link>
           </div>
 
-          <nav className="flex-1 p-6 space-y-4">
-            <Link href="/dashboard/learner" className="w-full flex items-center gap-3 p-3 bg-black text-brand-primary border-2 border-black transition-all font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#facc15]">
+          <nav className="flex-1 p-4 space-y-1.5">
+            <Link href="/dashboard/learner" className="w-full flex items-center gap-3 px-3.5 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl font-semibold text-xs shadow-xs transition-all">
               <LayoutDashboard className="w-4 h-4" />
               My Roadmap
             </Link>
-            <button className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <button className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Search className="w-4 h-4" />
               Catalog
             </button>
-            <button className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <button className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Award className="w-4 h-4" />
               Credentials
             </button>
           </nav>
 
-          <div className="p-6 border-t-4 border-black">
+          <div className="p-4 border-t border-slate-200">
             <button 
               onClick={logout}
-              className="w-full flex items-center gap-3 p-3 hover:bg-black hover:text-brand-primary transition-all font-black uppercase text-xs tracking-widest"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-medium text-xs"
             >
               <LogOut className="w-4 h-4" />
               Sign Out
@@ -256,79 +258,81 @@ export default function LearnerDashboard() {
 
         {/* Main Content */}
         <main className="flex-1 ml-64 overflow-y-auto">
-          <header className="h-24 border-b-4 border-black bg-white flex items-center justify-between px-10 sticky top-0 z-10">
+          <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tight italic">Mission Control</h1>
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Welcome back, {user?.name} // Session active</p>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">Mission Control</h1>
+              <p className="text-xs text-slate-400 font-medium">Welcome back, {user?.name}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black uppercase text-zinc-500">Global Rank</span>
-                <span className="text-lg font-black italic">TOP 4%</span>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Global Rank</span>
+                <span className="text-sm font-bold text-indigo-600">Top 4%</span>
               </div>
-              <div className="w-12 h-12 border-4 border-black bg-brand-primary flex items-center justify-center font-black">
+              <div className="w-10 h-10 rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm shadow-xs">
                 {user?.name?.charAt(0)}
               </div>
             </div>
           </header>
 
-          <div className="p-10 max-w-6xl">
+          <div className="p-8 max-w-6xl">
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
               {[
-                { label: 'Active Curricula', val: myEnrollments.length, icon: BookOpen, color: 'bg-white' },
-                { label: 'Certifications', val: '02', icon: Award, color: 'bg-brand-primary' },
-                { label: 'Learning Velocity', val: '94%', icon: TrendingUp, color: 'bg-black text-white' },
+                { label: 'Active Curricula', val: myEnrollments.length, icon: BookOpen, tint: 'bg-indigo-50 border-indigo-100 text-indigo-600' },
+                { label: 'Certifications', val: '02', icon: Award, tint: 'bg-sky-50 border-sky-100 text-sky-600' },
+                { label: 'Learning Velocity', val: '94%', icon: TrendingUp, tint: 'bg-emerald-50 border-emerald-100 text-emerald-600' },
               ].map((stat, i) => (
-                <div key={i} className={`${stat.color} border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000000]`}>
+                <div key={i} className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs hover:shadow-md transition-all">
                   <div className="flex justify-between items-start mb-4">
-                    <stat.icon className="w-6 h-6" />
-                    <span className="text-3xl font-black italic leading-none">{stat.val}</span>
+                    <div className={`p-2.5 rounded-xl border ${stat.tint}`}>
+                      <stat.icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-2xl font-bold text-slate-900 leading-none">{stat.val}</span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">{stat.label}</span>
+                  <span className="text-xs font-medium text-slate-500">{stat.label}</span>
                 </div>
               ))}
             </div>
 
             {/* My Active Courses */}
-            <section className="mb-16">
-              <h2 className="text-xl font-black uppercase tracking-tight italic mb-8 flex items-center gap-3">
-                <Zap className="w-5 h-5 fill-brand-primary" />
+            <section className="mb-14">
+              <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2.5">
+                <Zap className="w-5 h-5 text-indigo-600" />
                 Active Learning Roadmap
               </h2>
               
               {/* AI Personalized Path */}
               {user?.personalizedPath && user.personalizedPath.length > 0 && (
-                <div className="mb-12 bg-black border-4 border-black p-8 shadow-[8px_8px_0px_0px_#facc15] relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-brand-primary text-black px-4 py-1 text-[10px] font-black uppercase tracking-widest italic">
-                    AI ARCHITECTED PATH
+                <div className="mb-10 bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/50 border border-indigo-100 rounded-2xl p-7 shadow-xs relative overflow-hidden">
+                  <div className="absolute top-4 right-4 bg-indigo-100/90 text-indigo-700 px-3 py-1 text-xs font-semibold rounded-full">
+                    AI Architected Path
                   </div>
                   <div className="relative z-10">
-                    <h3 className="text-brand-primary text-xl font-black uppercase italic mb-6 flex items-center gap-3">
-                      <Zap className="w-5 h-5 fill-brand-primary" />
+                    <h3 className="text-slate-900 text-base font-bold mb-5 flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-indigo-600" />
                       Optimized Trajectory
                     </h3>
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-3">
                       {user.personalizedPath.map((moduleName: string, i: number) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <div className="bg-white text-black w-8 h-8 flex items-center justify-center font-black italic border-2 border-brand-primary">
+                        <div key={i} className="flex items-center gap-2.5 bg-white/80 border border-indigo-100 px-3.5 py-2 rounded-xl shadow-xs">
+                          <div className="bg-indigo-600 text-white w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs">
                             {i + 1}
                           </div>
-                          <span className="text-white text-xs font-bold uppercase tracking-widest">{moduleName}</span>
+                          <span className="text-slate-800 text-xs font-semibold">{moduleName}</span>
                           {i < (user.personalizedPath?.length || 0) - 1 && (
-                            <ArrowRight className="w-4 h-4 text-brand-primary" />
+                            <ArrowRight className="w-3.5 h-3.5 text-indigo-400 ml-1" />
                           )}
                         </div>
                       ))}
                     </div>
 
                     {user?.focusSuggestions && (
-                      <div className="mt-8 pt-8 border-t border-brand-primary/30">
-                        <h4 className="text-brand-primary text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                          <Info className="w-4 h-4" />
+                      <div className="mt-6 pt-5 border-t border-indigo-100/80">
+                        <h4 className="text-indigo-900 text-xs font-semibold mb-2 flex items-center gap-1.5">
+                          <Info className="w-4 h-4 text-indigo-600" />
                           AI Success Directives
                         </h4>
-                        <p className="text-white/80 text-[10px] font-bold leading-relaxed uppercase tracking-widest italic">
+                        <p className="text-slate-600 text-xs leading-relaxed font-normal bg-white/60 p-3 rounded-xl border border-indigo-100/60">
                           "{user.focusSuggestions}"
                         </p>
                       </div>
@@ -337,74 +341,74 @@ export default function LearnerDashboard() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {myEnrollments.length > 0 ? (
                   myEnrollments.map((enrollment) => (
                     <motion.div 
                       key={enrollment._id}
-                      whileHover={{ y: -4 }}
+                      whileHover={{ y: -2 }}
                       onClick={() => handleViewPersonalizedPath(enrollment.courseId)}
-                      className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000000] flex flex-col cursor-pointer"
+                      className="bg-white border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col cursor-pointer overflow-hidden"
                     >
-                      <div className="p-6 border-b-4 border-black flex-1">
-                        <div className="flex justify-between items-start mb-4">
-                          <span className="bg-black text-white px-3 py-1 text-[10px] font-black italic uppercase tracking-widest">
+                      <div className="p-6 border-b border-slate-100 flex-1">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-semibold rounded-lg">
                             {enrollment.courseId.category}
                           </span>
-                          <span className="text-[10px] font-black uppercase tracking-tighter text-zinc-400 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> ENROLLED {new Date(enrollment.enrolledAt).toLocaleDateString()}
+                          <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <h3 className="text-xl font-black uppercase leading-tight mb-2 tracking-tight">
+                        <h3 className="text-base font-bold text-slate-900 mb-1.5 leading-snug">
                           {enrollment.courseId.title}
                         </h3>
-                        <p className="text-xs font-bold text-zinc-600 line-clamp-2">
+                        <p className="text-xs text-slate-500 font-normal line-clamp-2 leading-relaxed">
                           {enrollment.courseId.description}
                         </p>
                         {enrollment.score !== undefined && enrollment.score !== null && (
-                          <div className="flex items-center gap-1.5 bg-brand-primary text-black px-3 py-1 text-[9px] font-black uppercase italic w-fit mt-3 border border-black shadow-[2px_2px_0px_0px_#000000]">
+                          <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 text-xs font-semibold rounded-lg w-fit mt-3">
                             <Award className="w-3.5 h-3.5" />
                             Assessed: {Math.round((enrollment.score / enrollment.totalQuestions!) * 100)}%
                           </div>
                         )}
                       </div>
                       
-                      <div className="p-6 bg-zinc-50 flex items-center justify-between">
+                      <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
                         <div className="flex-1 mr-6">
-                          <div className="flex justify-between mb-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest">Progress</span>
-                            <span className="text-[10px] font-black uppercase tracking-widest">{enrollment.progress}%</span>
+                          <div className="flex justify-between mb-1.5">
+                            <span className="text-xs font-medium text-slate-500">Progress</span>
+                            <span className="text-xs font-bold text-slate-700">{enrollment.progress}%</span>
                           </div>
-                          <div className="h-3 border-2 border-black bg-white overflow-hidden">
+                          <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
                             <div 
-                              className="h-full bg-brand-primary border-r-2 border-black transition-all duration-1000"
+                              className="h-full bg-indigo-600 rounded-full transition-all duration-1000"
                               style={{ width: `${enrollment.progress}%` }}
                             />
                           </div>
                         </div>
                         
-                        <div className="flex gap-3 items-center">
+                        <div className="flex gap-2 items-center">
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               promptCancelEnrollment(enrollment._id);
                             }}
-                            className="bg-white border-2 border-black p-3 hover:bg-red-50 transition-all shadow-[2px_2px_0px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                            className="bg-white border border-slate-200 p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-xs"
                             title="Cancel Enrollment"
                           >
-                            <Trash2 className="w-4 h-4 text-red-600" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
 
                            {enrollment.status === 'completed' ? (
-                            <div className="flex flex-col items-end gap-2">
-                              <div className="flex items-center gap-2 bg-green-500 text-black px-3 py-1 text-[10px] font-black uppercase italic">
-                                <Award className="w-3 h-3" />
-                                COURSE PASSED: {Math.round((enrollment.score! / enrollment.totalQuestions!) * 100)}%
+                            <div className="flex flex-col items-end gap-1.5">
+                              <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-semibold">
+                                <Award className="w-3.5 h-3.5" />
+                                Passed: {Math.round((enrollment.score! / enrollment.totalQuestions!) * 100)}%
                               </div>
                               <Link 
                                 href={`/dashboard/learner/courses/${enrollment.courseId._id}/assessment`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="text-[10px] font-black uppercase underline hover:text-brand-primary"
+                                className="text-xs font-medium text-indigo-600 hover:underline"
                               >
                                 Review Results
                               </Link>
@@ -413,7 +417,7 @@ export default function LearnerDashboard() {
                             <Link 
                               href={`/dashboard/learner/courses/${enrollment.courseId._id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-black text-white px-6 py-3 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-semibold text-xs shadow-xs transition-all"
                             >
                               Resume
                             </Link>
@@ -423,7 +427,7 @@ export default function LearnerDashboard() {
                                 e.stopPropagation();
                                 handleViewPersonalizedPath(enrollment.courseId);
                               }}
-                              className="bg-black text-white px-6 py-3 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#facc15] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-semibold text-xs shadow-xs transition-all"
                             >
                               Launch
                             </button>
@@ -433,10 +437,10 @@ export default function LearnerDashboard() {
                     </motion.div>
                   ))
                 ) : (
-                  <div className="col-span-2 border-4 border-dashed border-zinc-300 p-20 flex flex-col items-center justify-center text-center">
-                    <BookOpen className="w-12 h-12 text-zinc-300 mb-4" />
-                    <h3 className="font-black uppercase italic text-zinc-400">No active curricula detected</h3>
-                    <p className="text-xs font-bold text-zinc-400 mt-2 uppercase tracking-widest">Enroll in a course from the catalog to begin</p>
+                  <div className="col-span-2 border border-dashed border-slate-300 rounded-2xl p-16 flex flex-col items-center justify-center text-center bg-white">
+                    <BookOpen className="w-10 h-10 text-slate-300 mb-3" />
+                    <h3 className="font-bold text-slate-600">No active curricula detected</h3>
+                    <p className="text-xs text-slate-400 mt-1">Enroll in a course from the catalog below to begin</p>
                   </div>
                 )}
               </div>
@@ -444,40 +448,40 @@ export default function LearnerDashboard() {
 
             {/* Organization Directives */}
             {availableCourses.some(c => (c.organizationId?._id || c.organizationId) === user?.organizationId) && (
-              <section className="mb-16">
-                <h2 className="text-xl font-black uppercase tracking-tight italic mb-8 flex items-center gap-3">
-                  <Award className="w-5 h-5 text-brand-primary fill-brand-primary" />
+              <section className="mb-14">
+                <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2.5">
+                  <Award className="w-5 h-5 text-indigo-600" />
                   Directives from {availableCourses.find(c => (c.organizationId?._id || c.organizationId) === user?.organizationId)?.organizationId?.name || 'Your Organization'}
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {availableCourses
                     .filter(c => (c.organizationId?._id || c.organizationId) === user?.organizationId)
                     .map((course) => (
-                      <div key={course._id} className="bg-brand-primary/10 border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000000] relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 bg-black text-brand-primary px-4 py-1 text-[10px] font-black uppercase tracking-widest italic">
-                          INTERNAL DEPLOYMENT
+                      <div key={course._id} className="bg-gradient-to-br from-indigo-50/50 via-white to-sky-50/30 border border-indigo-100 rounded-2xl p-7 shadow-xs relative overflow-hidden group">
+                        <div className="absolute top-4 right-4 bg-indigo-100/90 text-indigo-700 px-3 py-1 text-xs font-semibold rounded-full">
+                          Internal Deployment
                         </div>
                         <div className="relative z-10">
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 block mb-4 border-b-2 border-black w-fit">
+                          <span className="text-xs font-medium text-slate-500 block mb-2">
                             {course.category}
                           </span>
-                          <h3 className="text-2xl font-black uppercase mb-4 leading-tight tracking-tight">
+                          <h3 className="text-xl font-bold text-slate-900 mb-2 leading-tight">
                             {course.title}
                           </h3>
-                          <p className="text-xs font-bold text-zinc-600 line-clamp-3 mb-8 max-w-lg">
+                          <p className="text-xs text-slate-600 line-clamp-3 mb-6 max-w-lg leading-relaxed">
                             {course.description}
                           </p>
                           <button 
                             onClick={() => promptEnroll(course)}
-                            className="bg-black text-white px-8 py-4 font-black uppercase text-xs tracking-widest hover:bg-zinc-800 transition-all flex items-center gap-3 shadow-[4px_4px_0px_0px_#facc15]"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center gap-2"
                           >
                             Initialize Training
                             <ArrowRight className="w-4 h-4" />
                           </button>
                         </div>
-                        <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <Award className="w-40 h-40" />
+                        <div className="absolute -bottom-6 -right-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Award className="w-32 h-32 text-indigo-600" />
                         </div>
                       </div>
                     ))}
@@ -487,8 +491,8 @@ export default function LearnerDashboard() {
 
             {/* Recommended/Available Catalog */}
             <section>
-              <h2 className="text-xl font-black uppercase tracking-tight italic mb-8 flex items-center gap-3">
-                <Search className="w-5 h-5" />
+              <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2.5">
+                <Search className="w-5 h-5 text-indigo-600" />
                 Global Intelligence Catalog
               </h2>
 
@@ -496,21 +500,21 @@ export default function LearnerDashboard() {
                 {availableCourses
                   .filter(c => (c.organizationId?._id || c.organizationId) !== user?.organizationId)
                   .map((course) => (
-                    <div key={course._id} className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000000] flex flex-col">
+                    <div key={course._id} className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs flex flex-col hover:border-slate-300 hover:shadow-md transition-all">
                       <div className="flex-1">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 block mb-4 border-b-2 border-black w-fit">
+                        <span className="bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-semibold rounded-lg inline-block mb-3">
                           {course.category}
                         </span>
-                        <h3 className="text-lg font-black uppercase mb-3 leading-tight tracking-tight">
+                        <h3 className="text-base font-bold text-slate-900 mb-2 leading-snug">
                           {course.title}
                         </h3>
-                        <p className="text-xs font-bold text-zinc-600 line-clamp-3 mb-6">
+                        <p className="text-xs text-slate-500 line-clamp-3 mb-6 leading-relaxed">
                           {course.description}
                         </p>
                       </div>
                       <button 
                         onClick={() => promptEnroll(course)}
-                        className="w-full border-4 border-black py-4 font-black uppercase text-xs tracking-widest hover:bg-brand-primary transition-all flex items-center justify-center gap-3"
+                        className="w-full border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 text-slate-700 py-3 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-2"
                       >
                         Enroll Now
                         <ArrowRight className="w-4 h-4" />
@@ -525,42 +529,42 @@ export default function LearnerDashboard() {
         {/* Custom Confirmation Modal */}
         <AnimatePresence>
           {showAssessmentPrompt && selectedCourseForEnroll && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-lg bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000000] text-black relative"
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl p-8 shadow-2xl shadow-slate-900/10 text-slate-900 relative"
               >
                 <button 
                   onClick={handleCancelEnroll}
-                  className="absolute top-4 right-4 text-black hover:bg-zinc-100 border-2 border-black p-1 transition-all"
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg p-1.5 transition-all"
                   aria-label="Close"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
 
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 border-2 border-black bg-brand-primary flex items-center justify-center font-black">
-                    <Zap className="w-5 h-5 text-black fill-black" />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <Zap className="w-5 h-5 fill-current" />
                   </div>
-                  <h3 className="text-xl font-black uppercase italic tracking-tight">Initiate Training?</h3>
+                  <h3 className="text-xl font-bold tracking-tight">Initiate Training</h3>
                 </div>
 
-                <p className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-2">
+                <p className="text-xs font-semibold text-slate-500 mb-2">
                   Curriculum: {selectedCourseForEnroll.title}
                 </p>
                 
-                <p className="text-xs font-bold text-zinc-700 leading-relaxed mb-8 uppercase tracking-widest bg-zinc-50 p-4 border-2 border-dashed border-black">
+                <p className="text-xs text-slate-600 leading-relaxed mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                   This training includes a personalized skill assessment layer. Would you like to take the assessment now to customize your learning path?
                 </p>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2.5">
                   <button
                     onClick={handleConfirmAssessment}
-                    className="w-full bg-brand-primary text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
                   >
                     Yes, Take Assessment
                     <ArrowRight className="w-4 h-4" />
@@ -568,16 +572,16 @@ export default function LearnerDashboard() {
                   
                   <button
                     onClick={handleSkipAssessment}
-                    className="w-full bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 py-3 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
                   >
                     No, Just Enroll
                   </button>
                   
                   <button
                     onClick={handleCancelEnroll}
-                    className="w-full bg-zinc-100 text-zinc-500 hover:text-black py-2 font-black uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all"
+                    className="w-full text-slate-400 hover:text-slate-600 py-2 font-medium text-xs transition-all"
                   >
-                    Cancel Setup
+                    Cancel
                   </button>
                 </div>
               </motion.div>
@@ -588,47 +592,47 @@ export default function LearnerDashboard() {
         {/* Custom Delete Confirmation Modal */}
         <AnimatePresence>
           {showCancelConfirmation && enrollmentIdToCancel && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-md bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000000] text-black relative"
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-2xl shadow-slate-900/10 text-slate-900 relative"
               >
                 <button 
                   onClick={closeCancelConfirmation}
-                  className="absolute top-4 right-4 text-black hover:bg-zinc-100 border-2 border-black p-1 transition-all"
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg p-1.5 transition-all"
                   aria-label="Close"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
 
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 border-2 border-black bg-red-100 flex items-center justify-center font-black">
-                    <Trash2 className="w-5 h-5 text-red-600" />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl border border-rose-100 bg-rose-50 flex items-center justify-center text-rose-600">
+                    <Trash2 className="w-5 h-5" />
                   </div>
-                  <h3 className="text-xl font-black uppercase italic tracking-tight text-red-600">Cancel Enrollment?</h3>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900">Cancel Enrollment</h3>
                 </div>
 
-                <p className="text-xs font-bold text-zinc-700 leading-relaxed mb-8 uppercase tracking-widest bg-zinc-50 p-4 border-2 border-dashed border-black">
+                <p className="text-xs text-slate-600 leading-relaxed mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                   Are you sure you want to cancel this enrollment? This will remove the curriculum from your active roadmap and reset all progress.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={confirmCancelEnrollment}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                    className="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
                   >
-                    Delete
+                    Remove
                   </button>
                   
                   <button
                     onClick={closeCancelConfirmation}
-                    className="flex-1 bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                    className="flex-1 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 py-3 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
                   >
-                    Cancel
+                    Keep
                   </button>
                 </div>
               </motion.div>
@@ -639,64 +643,64 @@ export default function LearnerDashboard() {
         {/* Custom Personalized Path Modal */}
         <AnimatePresence>
           {selectedCourseForPath && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-5xl bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000000] text-black relative"
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="w-full max-w-4xl bg-white border border-slate-200 rounded-2xl p-8 shadow-2xl shadow-slate-900/10 text-slate-900 relative"
               >
                 <button 
                   onClick={() => {
                     setSelectedCourseForPath(null);
                     setPersonalizedPathData(null);
                   }}
-                  className="absolute top-4 right-4 text-black hover:bg-zinc-100 border-2 border-black p-1 transition-all"
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg p-1.5 transition-all"
                   aria-label="Close"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
 
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 border-2 border-black bg-brand-primary flex items-center justify-center font-black">
-                    <Zap className="w-6 h-6 text-black fill-black" />
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <Zap className="w-5 h-5 fill-current" />
                   </div>
-                  <h3 className="text-2xl font-black uppercase italic tracking-tight">Personalized Roadmap</h3>
+                  <h3 className="text-xl font-bold tracking-tight">Personalized Roadmap</h3>
                 </div>
 
-                <h4 className="text-base font-black uppercase tracking-wider text-zinc-500 mb-6">
+                <p className="text-xs font-semibold text-slate-500 mb-6">
                   Curriculum: {selectedCourseForPath.title}
-                </h4>
+                </p>
 
                 {loadingPath ? (
-                  <div className="flex flex-col items-center justify-center py-20">
-                    <Loader2 className="w-12 h-12 text-brand-primary animate-spin mb-4" />
-                    <span className="text-xs font-black uppercase tracking-widest">Loading Optimized Trajectory...</span>
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
+                    <span className="text-xs font-semibold text-slate-500">Loading Optimized Trajectory...</span>
                   </div>
                 ) : personalizedPathData && personalizedPathData.recommendedOrder && personalizedPathData.recommendedOrder.length > 0 ? (
                   <div className="space-y-6">
-                    <div className="text-left border-4 border-black p-6 bg-zinc-50 shadow-[4px_4px_0px_0px_#000000]">
-                      <h5 className="text-sm font-black uppercase tracking-widest mb-4 border-b-2 border-black pb-2 flex items-center gap-2">
-                        <Zap className="w-4 h-4 fill-brand-primary text-black" />
+                    <div className="text-left border border-slate-200 rounded-xl p-6 bg-slate-50/50">
+                      <h5 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-indigo-600" />
                         Sequence of Study
                       </h5>
-                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-2">
                         {personalizedPathData.recommendedOrder.map((mod: any, index: number) => (
-                          <div key={mod._id} className="flex gap-4 items-start border-b border-zinc-200 pb-4 last:border-b-0 last:pb-0">
-                            <div className="bg-black text-brand-primary text-xs font-black italic w-8 h-8 shrink-0 flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_#000000]">
+                          <div key={mod._id} className="flex gap-3.5 items-start bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+                            <div className="bg-indigo-600 text-white text-xs font-bold w-7 h-7 rounded-lg shrink-0 flex items-center justify-center">
                               {index + 1}
                             </div>
                             <div className="flex-1">
-                              <h6 className="font-black uppercase text-sm tracking-wider text-black">{mod.title}</h6>
+                              <h6 className="font-semibold text-sm text-slate-900">{mod.title}</h6>
                               {mod.content && (
-                                <p className="text-xs font-bold text-zinc-600 leading-relaxed mt-1">{mod.content}</p>
+                                <p className="text-xs text-slate-500 leading-relaxed mt-1">{mod.content}</p>
                               )}
                               {mod.skillsCovered && mod.skillsCovered.length > 0 && (
                                 <div className="flex flex-wrap gap-1.5 mt-2">
                                   {mod.skillsCovered.map((skill: string, i: number) => (
-                                    <span key={i} className="bg-brand-primary/20 text-[10px] font-black uppercase px-2 py-0.5 border border-black/10 text-black">
+                                    <span key={i} className="bg-indigo-50 text-indigo-700 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-indigo-100">
                                       {skill}
                                     </span>
                                   ))}
@@ -709,52 +713,44 @@ export default function LearnerDashboard() {
                     </div>
 
                     {personalizedPathData.additionalRecommendations && personalizedPathData.additionalRecommendations.length > 0 && (
-                      <div className="p-4 bg-black text-brand-primary border-2 border-black text-xs font-bold uppercase tracking-widest">
-                        Focus Suggestions: "{personalizedPathData.additionalRecommendations.join(' ')}"
+                      <div className="p-4 bg-indigo-50/80 border border-indigo-100 rounded-xl text-xs text-indigo-900 font-medium leading-relaxed">
+                        <span className="font-bold">Focus Suggestions:</span> "{personalizedPathData.additionalRecommendations.join(' ')}"
                       </div>
                     )}
 
-                    <div className="pt-6 border-t-2 border-black mt-6">
-                      <p className="text-xs font-black uppercase tracking-wider text-black mb-4">
-                        Would you like to start this course now?
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <button
-                          onClick={() => {
-                            setSelectedCourseForPath(null);
-                            setPersonalizedPathData(null);
-                            router.push(`/dashboard/learner/courses/${selectedCourseForPath._id}`);
-                          }}
-                          className="flex-1 bg-brand-primary text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
-                        >
-                          Start Course
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedCourseForPath(null);
-                            setPersonalizedPathData(null);
-                          }}
-                          className="flex-1 bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
-                        >
-                          Close
-                        </button>
-                      </div>
+                    <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => {
+                          setSelectedCourseForPath(null);
+                          setPersonalizedPathData(null);
+                          router.push(`/dashboard/learner/courses/${selectedCourseForPath._id}`);
+                        }}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
+                      >
+                        Start Course
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCourseForPath(null);
+                          setPersonalizedPathData(null);
+                        }}
+                        className="flex-1 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 py-3 rounded-xl font-semibold text-xs shadow-xs transition-all"
+                      >
+                        Close
+                      </button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="border-4 border-dashed border-zinc-300 p-12 text-center flex flex-col items-center justify-center">
-                      <Zap className="w-12 h-12 text-zinc-300 mb-4 animate-bounce" />
-                      <h5 className="font-black uppercase italic text-zinc-400">No active pathway detected</h5>
-                      <p className="text-xs font-bold text-zinc-400 mt-2 uppercase tracking-widest leading-relaxed">
-                        You can take the initial assessment layer to customize your learning path, or start with the default curriculum order.
+                    <div className="border border-dashed border-slate-300 rounded-xl p-10 text-center flex flex-col items-center justify-center bg-slate-50/50">
+                      <Zap className="w-10 h-10 text-slate-300 mb-3" />
+                      <h5 className="font-bold text-slate-700">No active pathway detected</h5>
+                      <p className="text-xs text-slate-500 mt-1 max-w-md">
+                        You can take the initial assessment to customize your learning path, or start with the default curriculum order.
                       </p>
                     </div>
-                    <div className="pt-6 border-t-2 border-black">
-                      <p className="text-xs font-black uppercase tracking-wider text-black mb-4">
-                        Select your launching vector:
-                      </p>
+                    <div className="pt-2">
                       <div className="flex flex-col sm:flex-row gap-3">
                         <button
                           onClick={() => {
@@ -762,7 +758,7 @@ export default function LearnerDashboard() {
                             setPersonalizedPathData(null);
                             router.push(`/dashboard/learner/courses/${selectedCourseForPath._id}/assessment`);
                           }}
-                          className="flex-1 bg-brand-primary text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                          className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
                         >
                           Start Assessment
                           <ArrowRight className="w-4 h-4" />
@@ -773,17 +769,17 @@ export default function LearnerDashboard() {
                             setPersonalizedPathData(null);
                             router.push(`/dashboard/learner/courses/${selectedCourseForPath._id}`);
                           }}
-                          className="flex-1 bg-black text-white border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center justify-center gap-2"
+                          className="flex-1 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 py-3 rounded-xl font-semibold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
                         >
                           Start Course (Default)
-                          <ArrowRight className="w-4 h-4 text-brand-primary" />
+                          <ArrowRight className="w-4 h-4 text-slate-400" />
                         </button>
                         <button
                           onClick={() => {
                             setSelectedCourseForPath(null);
                             setPersonalizedPathData(null);
                           }}
-                          className="flex-1 bg-white text-black border-4 border-black py-4 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#000000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+                          className="flex-1 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 py-3 rounded-xl font-semibold text-xs shadow-xs transition-all"
                         >
                           Close
                         </button>

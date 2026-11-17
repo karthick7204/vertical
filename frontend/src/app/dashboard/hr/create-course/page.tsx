@@ -2,121 +2,134 @@
 
 import React, { useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/context/AuthContext';
 import { 
-  ArrowLeft, 
+  BarChart3, 
+  Layers, 
+  Users, 
+  Mail, 
+  Settings, 
+  LogOut, 
   Plus, 
   Trash2, 
+  Save, 
   Video, 
   FileText, 
-  File as FileIcon, 
+  FileIcon, 
   ChevronDown, 
-  ChevronUp,
-  Save,
-  Loader2,
+  ChevronUp, 
+  ArrowLeft,
   CheckCircle2,
-  Layers,
-  BarChart3,
-  Users,
-  Mail,
-  Settings,
-  LogOut
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { courseService } from '@/services/courseService';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
 
-type ResourceType = 'video' | 'pdf' | 'document' | 'text';
+type ResourceType = 'video' | 'text' | 'pdf' | 'document';
 
-interface SubModule {
+interface SubModuleInput {
   id: string;
   title: string;
   content: string;
+  videoUrl?: string;
+  estimatedTime?: number;
 }
 
-interface Module {
+interface ModuleInput {
   id: string;
   title: string;
   type: ResourceType;
   content: string;
   skillsCovered: string;
-  subModules: SubModule[];
   isExpanded: boolean;
+  subModules: SubModuleInput[];
 }
 
 export default function CreateCoursePage() {
-  const router = useRouter();
   const { logout } = useAuth();
+
   const [courseTitle, setCourseTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Engineering');
-  const [modules, setModules] = useState<Module[]>([
-    { id: '1', title: 'Introduction to Core Concepts', type: 'video', content: '', skillsCovered: 'Basics, Architecture', subModules: [], isExpanded: true }
+  
+  const [modules, setModules] = useState<ModuleInput[]>([
+    {
+      id: '1',
+      title: 'Foundation Systems',
+      type: 'video',
+      content: '',
+      skillsCovered: 'Architecture, Systems',
+      isExpanded: true,
+      subModules: []
+    }
   ]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const addModule = () => {
-    const newModule: Module = {
+    const newModule: ModuleInput = {
       id: Date.now().toString(),
-      title: 'New Module Architecture',
+      title: `Module 0${modules.length + 1} Architecture`,
       type: 'text',
       content: '',
       skillsCovered: '',
-      subModules: [],
-      isExpanded: true
+      isExpanded: true,
+      subModules: []
     };
     setModules([...modules, newModule]);
   };
 
   const removeModule = (id: string) => {
-    if (modules.length > 1) {
-      setModules(modules.filter(m => m.id !== id));
-    }
-  };
-
-  const updateModule = (id: string, updates: Partial<Module>) => {
-    setModules(modules.map(m => m.id === id ? { ...m, ...updates } : m));
+    setModules(modules.filter(m => m.id !== id));
   };
 
   const toggleExpand = (id: string) => {
     setModules(modules.map(m => m.id === id ? { ...m, isExpanded: !m.isExpanded } : m));
   };
 
+  const updateModule = (id: string, updates: Partial<ModuleInput>) => {
+    setModules(modules.map(m => m.id === id ? { ...m, ...updates } : m));
+  };
+
+  // Sub-modules handlers
   const addSubModule = (moduleId: string) => {
+    const newSub: SubModuleInput = {
+      id: Date.now().toString(),
+      title: 'New Sub-Topic',
+      content: ''
+    };
     setModules(modules.map(m => {
       if (m.id === moduleId) {
         return {
           ...m,
-          subModules: [
-            ...m.subModules,
-            { id: Date.now().toString(), title: 'New Sub-Module', content: '' }
-          ]
+          subModules: [...m.subModules, newSub]
         };
       }
       return m;
     }));
   };
 
-  const removeSubModule = (moduleId: string, subModuleId: string) => {
+  const removeSubModule = (moduleId: string, subId: string) => {
     setModules(modules.map(m => {
       if (m.id === moduleId) {
         return {
           ...m,
-          subModules: m.subModules.filter(sm => sm.id !== subModuleId)
+          subModules: m.subModules.filter(sm => sm.id !== subId)
         };
       }
       return m;
     }));
   };
 
-  const updateSubModule = (moduleId: string, subModuleId: string, updates: Partial<SubModule>) => {
+  const updateSubModule = (moduleId: string, subId: string, updates: Partial<SubModuleInput>) => {
     setModules(modules.map(m => {
       if (m.id === moduleId) {
         return {
           ...m,
-          subModules: m.subModules.map(sm => sm.id === subModuleId ? { ...sm, ...updates } : sm)
+          subModules: m.subModules.map(sm => sm.id === subId ? { ...sm, ...updates } : sm)
         };
       }
       return m;
@@ -124,39 +137,40 @@ export default function CreateCoursePage() {
   };
 
   const handleSave = async () => {
-    if (!courseTitle) return;
-    
+    if (!courseTitle) {
+      alert('Internal Title is required');
+      return;
+    }
+
     setIsSaving(true);
-    
     try {
-      const courseData = {
+      const payload = {
         title: courseTitle,
         description,
         category,
-        isPublic: true,
-        modules: modules.map((m, index) => ({
+        modules: modules.map(m => ({
           title: m.title,
           content: m.content,
           type: m.type,
-          order: index,
-          skillsCovered: m.skillsCovered.split(',').map(s => s.trim()).filter(s => s !== ''),
+          videoUrl: m.type === 'video' ? m.content : undefined,
+          skillsCovered: m.skillsCovered.split(',').map(s => s.trim()).filter(Boolean),
           subModules: m.subModules.map(sm => ({
             title: sm.title,
-            content: sm.content
+            content: sm.content,
+            videoUrl: sm.videoUrl,
+            estimatedTime: sm.estimatedTime
           }))
         }))
       };
 
-      await courseService.createCourse(courseData);
-      
+      await courseService.createCourse(payload);
+
       setIsSuccess(true);
       setTimeout(() => {
-        router.push('/dashboard/hr/courses');
-      }, 2000);
-
-    } catch (error) {
-      console.error('Failed to create course:', error);
-      alert('Failed to deploy course architecture. Check system logs.');
+        setIsSuccess(false);
+      }, 3000);
+    } catch (err: any) {
+      alert(err.message || 'Error creating course');
     } finally {
       setIsSaving(false);
     }
@@ -164,71 +178,77 @@ export default function CreateCoursePage() {
 
   return (
     <ProtectedRoute allowedRoles={['HR_ADMIN', 'SUPER_ADMIN']}>
-      <div className="min-h-screen bg-zinc-50 flex text-black">
+      <div className="min-h-screen bg-slate-50/60 flex text-slate-900">
         {/* Sidebar */}
-        <aside className="w-64 border-r-4 border-black bg-white flex flex-col fixed h-full">
-          <div className="p-8 border-b-4 border-black">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 border-2 border-black bg-brand-primary" />
-              <span className="font-display font-black tracking-tighter text-xl">VERTICLE</span>
+        <aside className="w-64 border-r border-slate-200 bg-white flex flex-col fixed h-full z-20">
+          <div className="p-6 border-b border-slate-200 bg-white">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl border border-indigo-100 bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-xs">
+                <Sparkles className="w-5 h-5 fill-current" />
+              </div>
+              <span className="font-display font-bold tracking-tight text-xl text-slate-900">VERTICLE</span>
             </Link>
           </div>
 
-          <nav className="flex-1 p-6 space-y-4">
-            <Link href="/dashboard/hr" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+          <nav className="flex-1 p-4 space-y-1.5">
+            <Link href="/dashboard/hr" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <BarChart3 className="w-4 h-4" />
               Analytics
             </Link>
-            <Link href="/dashboard/hr/courses" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/courses" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Layers className="w-4 h-4" />
               Courses
             </Link>
-            <Link href="/dashboard/hr/learners" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/learners" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Users className="w-4 h-4" />
               Learners
             </Link>
-            <Link href="/dashboard/hr/invitations" className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/create-course" className="w-full flex items-center gap-3 px-3.5 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl font-semibold text-xs shadow-xs transition-all">
+              <Plus className="w-4 h-4" />
+              Create Course
+            </Link>
+            <Link href="/dashboard/hr/invitations" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Mail className="w-4 h-4" />
               Invitations
             </Link>
-            <button className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all font-black uppercase text-xs tracking-widest">
+            <Link href="/dashboard/hr/settings" className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all font-medium text-xs">
               <Settings className="w-4 h-4" />
               Settings
-            </button>
+            </Link>
           </nav>
 
-          <div className="p-6 border-t-4 border-black">
+          <div className="p-4 border-t border-slate-200">
             <button 
               onClick={logout}
-              className="w-full flex items-center gap-3 p-3 hover:bg-black hover:text-brand-primary transition-all font-black uppercase text-xs tracking-widest"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-medium text-xs"
             >
               <LogOut className="w-4 h-4" />
-              Terminate Session
+              Sign Out
             </button>
           </div>
         </aside>
 
         {/* Main Content */}
         <main className="flex-1 ml-64 overflow-y-auto">
-          <header className="h-24 border-b-4 border-black bg-white flex items-center justify-between px-10 sticky top-0 z-10">
-            <div className="flex items-center gap-6">
-              <Link href="/dashboard/hr/courses" className="p-2 border-2 border-black hover:bg-zinc-100 transition-all">
-                <ArrowLeft className="w-5 h-5" />
+          <header className="h-20 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard/hr/courses" className="p-2 border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-xs text-slate-600">
+                <ArrowLeft className="w-4 h-4" />
               </Link>
               <div>
-                <h1 className="text-2xl font-black uppercase tracking-tight italic">Course Architect</h1>
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Deploying curriculum // prototype v1.0</p>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">Course Architect</h1>
+                <p className="text-xs text-slate-400 font-medium">Design and deploy structured learning roadmaps</p>
               </div>
             </div>
             <button 
               onClick={handleSave}
               disabled={isSaving || isSuccess}
-              className="bg-brand-primary border-4 border-black px-10 py-3 font-black uppercase text-xs tracking-widest shadow-[8px_8px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50 transition-all flex items-center gap-3"
+              className="btn-yellow px-6 py-2.5 rounded-xl font-semibold text-xs shadow-xs active:translate-y-0.5 disabled:opacity-50 transition-all flex items-center gap-2"
             >
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Transmitting...
+                  Saving...
                 </>
               ) : isSuccess ? (
                 <>
@@ -244,28 +264,28 @@ export default function CreateCoursePage() {
             </button>
           </header>
 
-          <div className="p-10 max-w-5xl">
-            <div className="grid lg:grid-cols-3 gap-12">
+          <div className="p-8 max-w-6xl">
+            <div className="grid lg:grid-cols-3 gap-8">
               {/* Sidebar Config */}
-              <div className="lg:col-span-1 space-y-10">
-                <section className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000000]">
-                  <h3 className="text-xs font-black uppercase tracking-widest mb-6 pb-2 border-b-2 border-black italic">Core Configuration</h3>
+              <div className="lg:col-span-1 space-y-6">
+                <section className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-5 pb-2 border-b border-slate-100">Core Configuration</h3>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">Internal Title</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">Internal Title</label>
                       <input 
                         type="text" 
-                        className="w-full p-3 border-2 border-black bg-zinc-50 font-bold uppercase text-xs focus:bg-white focus:outline-none transition-all"
-                        placeholder="e.g. SYSTEMS ARCHITECTURE 101"
+                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-medium text-xs focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                        placeholder="e.g. Systems Architecture 101"
                         value={courseTitle}
                         onChange={(e) => setCourseTitle(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">Category Segment</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">Category Segment</label>
                       <select 
-                        className="w-full p-3 border-2 border-black bg-zinc-50 font-black text-xs uppercase appearance-none cursor-pointer focus:bg-brand-primary/20 transition-all"
+                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-medium text-xs cursor-pointer focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
                       >
@@ -276,9 +296,9 @@ export default function CreateCoursePage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2">Executive Summary</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">Summary</label>
                       <textarea 
-                        className="w-full p-3 border-2 border-black bg-zinc-50 font-bold text-xs h-32 focus:bg-white focus:outline-none transition-all"
+                        className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-medium text-xs h-28 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
                         placeholder="Define the strategic objectives of this curriculum..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -287,58 +307,58 @@ export default function CreateCoursePage() {
                   </div>
                 </section>
 
-                <div className="bg-black text-brand-primary p-6 border-4 border-black italic font-black text-xs uppercase leading-relaxed tracking-wider">
-                  "Architecture is the art of how to waste space. Curriculum is the art of how to fill it."
+                <div className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-5 text-indigo-900 text-xs font-normal leading-relaxed">
+                  "Architecture is the art of structuring complexity. Curriculum is the craft of making it accessible."
                 </div>
               </div>
 
               {/* Module Builder */}
-              <div className="lg:col-span-2 space-y-8">
+              <div className="lg:col-span-2 space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-black uppercase tracking-tight italic flex items-center gap-3 text-black">
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                     Module Composition 
-                    <span className="text-xs bg-black text-white px-3 py-1 font-black italic">{modules.length} Segments</span>
+                    <span className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-0.5 rounded-full font-semibold">{modules.length} Segments</span>
                   </h2>
                   <button 
                     onClick={addModule}
-                    className="border-2 border-black bg-white px-4 py-2 font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:bg-zinc-100 transition-all shadow-[4px_4px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 active:shadow-none"
+                    className="border border-slate-200 bg-white text-slate-700 px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-50 transition-all shadow-xs"
                   >
-                    <Plus className="w-3 h-3" /> Add Segment
+                    <Plus className="w-3.5 h-3.5" /> Add Segment
                   </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {modules.map((mod, index) => (
                     <motion.div 
                       key={mod.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000000] overflow-hidden"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden"
                     >
                       <div 
-                        className={`p-4 flex items-center justify-between cursor-pointer border-b-2 border-black ${mod.isExpanded ? 'bg-zinc-50' : ''}`}
+                        className={`p-4 flex items-center justify-between cursor-pointer border-b border-slate-100 ${mod.isExpanded ? 'bg-slate-50/50' : ''}`}
                         onClick={() => toggleExpand(mod.id)}
                       >
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <span className="text-[10px] font-black bg-black text-white w-6 h-6 flex items-center justify-center shrink-0 italic">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 w-6 h-6 rounded-lg flex items-center justify-center shrink-0">
                             0{index + 1}
                           </span>
                           <input 
                             type="text" 
-                            className="flex-1 bg-transparent border-none font-black uppercase text-xs focus:outline-none focus:bg-brand-primary/10 px-2 py-1 min-w-0"
+                            className="flex-1 bg-transparent border-none font-semibold text-xs text-slate-900 focus:outline-none px-2 py-1 min-w-0"
                             value={mod.title}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => updateModule(mod.id, { title: e.target.value })}
                           />
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           <button 
                             onClick={(e) => { e.stopPropagation(); removeModule(mod.id); }}
-                            className="p-1 hover:text-red-600 transition-colors"
+                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                          {mod.isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          {mod.isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                         </div>
                       </div>
 
@@ -348,9 +368,9 @@ export default function CreateCoursePage() {
                             initial={{ height: 0 }}
                             animate={{ height: 'auto' }}
                             exit={{ height: 0 }}
-                            className="p-6 space-y-6 bg-white"
+                            className="p-6 space-y-5 bg-white"
                           >
-                            <div className="flex gap-4 p-1 border-2 border-black w-fit bg-zinc-50">
+                            <div className="flex gap-2 p-1 border border-slate-200 rounded-xl w-fit bg-slate-50/50">
                               {[
                                 { type: 'video', icon: Video },
                                 { type: 'text', icon: FileText },
@@ -360,8 +380,10 @@ export default function CreateCoursePage() {
                                 <button
                                   key={item.type}
                                   onClick={() => updateModule(mod.id, { type: item.type as ResourceType })}
-                                  className={`flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                                    mod.type === item.type ? 'bg-black text-white shadow-[2px_2px_0px_0px_#facc15]' : 'hover:bg-zinc-200'
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                                    mod.type === item.type 
+                                      ? 'bg-indigo-600 text-white shadow-xs' 
+                                      : 'text-slate-600 hover:bg-slate-200/60'
                                   }`}
                                 >
                                   <item.icon className="w-3 h-3" /> {item.type}
@@ -369,21 +391,21 @@ export default function CreateCoursePage() {
                               ))}
                             </div>
 
-                            <div className="space-y-4">
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Content Source / Raw Text</label>
+                            <div className="space-y-1.5">
+                              <label className="block text-xs font-semibold text-slate-700">Content Source / Raw Text</label>
                               <textarea 
-                                className="w-full p-4 border-2 border-black bg-zinc-50 font-bold text-xs h-32 focus:bg-white focus:outline-none transition-all"
+                                className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-normal text-xs h-28 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
                                 placeholder={mod.type === 'video' ? 'Paste Video URL...' : 'Enter module content...'}
                                 value={mod.content}
                                 onChange={(e) => updateModule(mod.id, { content: e.target.value })}
                               />
                             </div>
 
-                            <div className="space-y-4">
-                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Skills Covered (Comma Separated)</label>
+                            <div className="space-y-1.5">
+                              <label className="block text-xs font-semibold text-slate-700">Skills Covered (Comma Separated)</label>
                               <input 
-                                type="text"
-                                className="w-full p-4 border-2 border-black bg-zinc-50 font-bold text-xs focus:bg-white focus:outline-none transition-all"
+                                type="text" 
+                                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-slate-900 font-normal text-xs focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
                                 placeholder="e.g. React, TypeScript, State Management"
                                 value={mod.skillsCovered}
                                 onChange={(e) => updateModule(mod.id, { skillsCovered: e.target.value })}
@@ -391,44 +413,44 @@ export default function CreateCoursePage() {
                             </div>
 
                             {/* Sub-Modules Section */}
-                            <div className="pt-6 border-t-2 border-black/5 space-y-4">
+                            <div className="pt-5 border-t border-slate-100 space-y-4">
                               <div className="flex items-center justify-between">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2">
-                                  Sub-Modules <span className="opacity-30">// Optional</span>
+                                <h4 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                                  Sub-Modules <span className="text-slate-400 font-normal">// Optional</span>
                                 </h4>
                                 <button 
                                   onClick={() => addSubModule(mod.id)}
-                                  className="text-[8px] font-black uppercase border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-all flex items-center gap-1"
+                                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 border border-indigo-200 bg-indigo-50 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1"
                                 >
                                   <Plus className="w-3 h-3" /> Add Sub-Module
                                 </button>
                               </div>
 
-                              <div className="space-y-4">
-                                {mod.subModules.map((sm, smIndex) => (
-                                  <div key={sm.id} className="bg-zinc-50 border-2 border-black p-4 space-y-4 relative group">
+                              <div className="space-y-3">
+                                {mod.subModules.map((sm) => (
+                                  <div key={sm.id} className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 space-y-3 relative group">
                                     <button 
                                       onClick={() => removeSubModule(mod.id, sm.id)}
-                                      className="absolute top-2 right-2 text-zinc-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                      className="absolute top-3 right-3 text-slate-400 hover:text-rose-600 transition-colors opacity-0 group-hover:opacity-100"
                                     >
-                                      <Trash2 className="w-3 h-3" />
+                                      <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                     
                                     <div className="flex gap-4">
                                       <div className="flex-1">
-                                        <label className="block text-[8px] font-black uppercase text-zinc-400 mb-1">Sub-Module Title</label>
+                                        <label className="block text-[10px] font-semibold text-slate-500 mb-1">Sub-Module Title</label>
                                         <input 
-                                          type="text"
-                                          className="w-full p-2 border border-black/10 bg-white font-bold text-xs uppercase"
+                                          type="text" 
+                                          className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-medium text-xs text-slate-800"
                                           value={sm.title}
                                           onChange={(e) => updateSubModule(mod.id, sm.id, { title: e.target.value })}
                                         />
                                       </div>
                                     </div>
                                     <div>
-                                      <label className="block text-[8px] font-black uppercase text-zinc-400 mb-1">Sub-Module Content</label>
+                                      <label className="block text-[10px] font-semibold text-slate-500 mb-1">Sub-Module Content</label>
                                       <textarea 
-                                        className="w-full p-2 border border-black/10 bg-white font-bold text-xs h-20"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white font-normal text-xs text-slate-800 h-20"
                                         placeholder="Specific details for this sub-module..."
                                         value={sm.content}
                                         onChange={(e) => updateSubModule(mod.id, sm.id, { content: e.target.value })}
